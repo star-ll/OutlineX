@@ -7,7 +7,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useBookStore } from "@/stores/book-store";
+import { useBookStore } from "@/stores/book";
 
 const formatDate = (timestamp: number) => {
   const date = new Date(timestamp);

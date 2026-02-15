@@ -1,26 +1,16 @@
 import { create } from "zustand";
 
 import { DEFAULT_BOOK_ID } from "@/constants/db";
-import { loadOutlineMaps, saveOutlineMaps } from "@/lib/features/outline";
+import {
+  createOutlinePersistenceScheduler,
+  loadOutlineMaps,
+} from "@/lib/features/outline";
 import { OutlineNode } from "@/types/outline";
 import { uuidV7 } from "@/utils/uuid";
 
 const ROOT_ID = "root";
+const outlinePersistenceScheduler = createOutlinePersistenceScheduler(250);
 
-const persistOutline = async (
-  bookId: string,
-  dataMap: Record<string, OutlineNode>,
-  parentMap: Record<string, string>,
-  childrenMap: Record<string, string[]>,
-) => {
-  try {
-    await saveOutlineMaps(bookId, { dataMap, parentMap, childrenMap });
-  } catch (error) {
-    console.error("Failed to persist outline", error);
-  }
-};
-
-let persistTimer: ReturnType<typeof setTimeout> | null = null;
 const schedulePersist = (
   bookId: string,
   dataMap: Record<string, OutlineNode>,
@@ -28,17 +18,10 @@ const schedulePersist = (
   childrenMap: Record<string, string[]>,
   immediate = false,
 ) => {
-  if (persistTimer) {
-    clearTimeout(persistTimer);
-    persistTimer = null;
-  }
-  if (immediate) {
-    void persistOutline(bookId, dataMap, parentMap, childrenMap);
-    return;
-  }
-  persistTimer = setTimeout(() => {
-    void persistOutline(bookId, dataMap, parentMap, childrenMap);
-  }, 250);
+  outlinePersistenceScheduler.schedule(
+    { bookId, maps: { dataMap, parentMap, childrenMap } },
+    immediate,
+  );
 };
 
 type OutlineState = {

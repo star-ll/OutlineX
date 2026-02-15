@@ -7,8 +7,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useBookStore } from "@/stores/book-store";
-import { useOutlineStore } from "@/stores/outline-store";
+import { useBookStore } from "@/stores/book";
+import { useOutlineStore } from "@/stores/outline";
 
 const INDENT_SIZE = 18;
 const itemEmpty: string[] = [];

@@ -1,3 +1,4 @@
+import { debounce } from "@/lib/algorithms/debounce";
 import {
   clearRowsByBook,
   insertBookRowIfNotExists,
@@ -10,6 +11,38 @@ import {
 
 import { initOutlineFeature } from "./bootstrap";
 import { OutlineMaps } from "./types";
+
+type PersistPayload = {
+  bookId: string;
+  maps: OutlineMaps;
+};
+
+export function createOutlinePersistenceScheduler(waitMs = 250) {
+  const persist = async ({ bookId, maps }: PersistPayload) => {
+    try {
+      await saveOutlineMaps(bookId, maps);
+    } catch (error) {
+      console.error("Failed to persist outline", error);
+    }
+  };
+
+  const debouncedPersist = debounce((payload: PersistPayload) => {
+    void persist(payload);
+  }, waitMs);
+
+  return {
+    schedule(payload: PersistPayload, immediate = false) {
+      if (immediate) {
+        debouncedPersist.flush(payload);
+        return;
+      }
+      debouncedPersist(payload);
+    },
+    cancel() {
+      debouncedPersist.cancel();
+    },
+  };
+}
 
 export async function loadOutlineMaps(bookId: string): Promise<OutlineMaps> {
   await initOutlineFeature();

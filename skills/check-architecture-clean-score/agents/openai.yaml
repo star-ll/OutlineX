@@ -1,0 +1,4 @@
+interface:
+  display_name: "Check Architecture Clean Score"
+  short_description: "Check AGENTS.md-based architecture cleanliness score."
+  default_prompt: "检查系统架构干净度：读取 AGENTS.md 的架构与约束，核查代码符合性，输出100分评分和整改建议。"

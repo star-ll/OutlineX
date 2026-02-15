@@ -11,7 +11,7 @@ import { useShallow } from "zustand/shallow";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Fonts } from "@/constants/theme";
-import { useOutlineStore } from "@/stores/outline-store";
+import { useOutlineStore } from "@/stores/outline";
 import { OutlineNode } from "@/types/outline";
 
 type OutlineItemProps = {
@@ -44,9 +44,7 @@ export default function OutlineItem({
   onDragTargetChange,
   renderChildren,
 }: OutlineItemProps) {
-  const item: OutlineNode = useOutlineStore(
-    (state) => state.dataMap[itemId],
-  )!;
+  const item: OutlineNode = useOutlineStore((state) => state.dataMap[itemId])!;
 
   const {
     setActiveId,
@@ -111,7 +109,10 @@ export default function OutlineItem({
       translateY.value = event.translationY;
       const ROW_STEP = 36;
       const shift = Math.round(event.translationY / ROW_STEP);
-      const target = Math.max(0, Math.min(startIndex.value + shift, siblingCount - 1));
+      const target = Math.max(
+        0,
+        Math.min(startIndex.value + shift, siblingCount - 1),
+      );
       if (onDragTargetChange) {
         runOnJS(onDragTargetChange)(target);
       }
@@ -119,7 +120,10 @@ export default function OutlineItem({
     .onEnd((event) => {
       const ROW_STEP = 36;
       const shift = Math.round(event.translationY / ROW_STEP);
-      const target = Math.max(0, Math.min(startIndex.value + shift, siblingCount - 1));
+      const target = Math.max(
+        0,
+        Math.min(startIndex.value + shift, siblingCount - 1),
+      );
       runOnJS(moveItemWithinParent)(item.id, target);
     })
     .onFinalize(() => {
@@ -147,75 +151,78 @@ export default function OutlineItem({
           isActive && { backgroundColor: `${colors.tint}1A` },
         ]}
       >
-        <Pressable onPress={() => setActiveId(item.id)} style={styles.rowPressArea}>
         <Pressable
-          accessibilityRole="button"
-          onPress={() => (hasChildren ? toggleCollapse(item.id) : null)}
-          style={styles.disclosure}
+          onPress={() => setActiveId(item.id)}
+          style={styles.rowPressArea}
         >
-          {hasChildren ? (
-            <IconSymbol
-              size={18}
-              color={colors.icon}
-              name="chevron.right"
-              style={{
-                transform: [{ rotate: collapsed ? "0deg" : "90deg" }],
-              }}
-            />
-          ) : (
-            <View style={styles.disclosureSpacer} />
-          )}
-        </Pressable>
-        <GestureDetector gesture={handleGesture}>
-          <Animated.View style={[styles.dragHandle, dragHandleStyle]}>
-            {dragHandleActive ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => (hasChildren ? toggleCollapse(item.id) : null)}
+            style={styles.disclosure}
+          >
+            {hasChildren ? (
               <IconSymbol
-                size={16}
+                size={18}
                 color={colors.icon}
-                name="line.3.horizontal"
+                name="chevron.right"
+                style={{
+                  transform: [{ rotate: collapsed ? "0deg" : "90deg" }],
+                }}
               />
             ) : (
-              <View style={[styles.bullet, { borderColor: colors.icon }]} />
+              <View style={styles.disclosureSpacer} />
             )}
-          </Animated.View>
-        </GestureDetector>
-        <TextInput
-          ref={(ref) => {
-            if (ref) {
-              inputRefs.current.set(item.id, ref);
-            } else {
-              inputRefs.current.delete(item.id);
-            }
-          }}
-          value={item.text}
-          onChangeText={(text) => updateItemText(item.id, text)}
-          onFocus={() => setActiveId(item.id)}
-          onSubmitEditing={() => addItemAfter(item.id)}
-          returnKeyType="next"
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              fontFamily: Fonts.sans,
-            },
-          ]}
-          placeholder="Write a note..."
-          placeholderTextColor={colors.icon}
-          blurOnSubmit={false}
-          onKeyPress={(event) => {
-            const { key } = event.nativeEvent;
-            if (key === "Tab") {
-              if ((event.nativeEvent as { shiftKey?: boolean }).shiftKey) {
-                outdentItem(item.id);
+          </Pressable>
+          <GestureDetector gesture={handleGesture}>
+            <Animated.View style={[styles.dragHandle, dragHandleStyle]}>
+              {dragHandleActive ? (
+                <IconSymbol
+                  size={16}
+                  color={colors.icon}
+                  name="line.3.horizontal"
+                />
+              ) : (
+                <View style={[styles.bullet, { borderColor: colors.icon }]} />
+              )}
+            </Animated.View>
+          </GestureDetector>
+          <TextInput
+            ref={(ref) => {
+              if (ref) {
+                inputRefs.current.set(item.id, ref);
               } else {
-                indentItem(item.id);
+                inputRefs.current.delete(item.id);
               }
-            }
-            if (key === "Backspace" && item.text.length === 0) {
-              removeItem(item.id);
-            }
-          }}
-        />
+            }}
+            value={item.text}
+            onChangeText={(text) => updateItemText(item.id, text)}
+            onFocus={() => setActiveId(item.id)}
+            onSubmitEditing={() => addItemAfter(item.id)}
+            returnKeyType="next"
+            style={[
+              styles.input,
+              {
+                color: colors.text,
+                fontFamily: Fonts.sans,
+              },
+            ]}
+            placeholder="Write a note..."
+            placeholderTextColor={colors.icon}
+            blurOnSubmit={false}
+            onKeyPress={(event) => {
+              const { key } = event.nativeEvent;
+              if (key === "Tab") {
+                if ((event.nativeEvent as { shiftKey?: boolean }).shiftKey) {
+                  outdentItem(item.id);
+                } else {
+                  indentItem(item.id);
+                }
+              }
+              if (key === "Backspace" && item.text.length === 0) {
+                removeItem(item.id);
+              }
+            }}
+          />
         </Pressable>
       </Animated.View>
       {hasChildren && !collapsed ? renderChildren?.(children, depth + 1) : null}

@@ -8,4 +8,8 @@ export {
   renameBook,
 } from "./books";
 export { initOutlineFeature } from "./bootstrap";
-export { loadOutlineMaps, saveOutlineMaps } from "./outline";
+export {
+  createOutlinePersistenceScheduler,
+  loadOutlineMaps,
+  saveOutlineMaps,
+} from "./outline";

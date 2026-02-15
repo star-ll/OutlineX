@@ -1,98 +1,186 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Colors, Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useBookStore } from "@/stores/book-store";
 
-export default function HomeScreen() {
+const formatDate = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes(),
+  ).padStart(2, "0")}`;
+};
+
+export default function IndexScreen() {
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
+  const books = useBookStore((state) => state.books);
+  const hydrate = useBookStore((state) => state.hydrate);
+  const refreshBooks = useBookStore((state) => state.refreshBooks);
+  const createBook = useBookStore((state) => state.createBook);
+
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+  useFocusEffect(
+    useCallback(() => {
+      void refreshBooks();
+    }, [refreshBooks]),
+  );
+
+  const handleCreateBook = useCallback(async () => {
+    const nextName = `笔记 ${books.length + 1}`;
+    const book = await createBook(nextName);
+    router.push(`/book/${book.id}`);
+  }, [books.length, createBook, router]);
+
+  const handleOpenBook = useCallback(
+    (bookId: string) => {
+      router.push(`/book/${bookId}`);
+    },
+    [router],
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ThemedView style={styles.container}>
+      <View style={styles.headerRow}>
+        <View>
+          <ThemedText style={[styles.kicker, { color: colors.icon }]}>
+            大纲笔记
+          </ThemedText>
+          {/* <ThemedText style={[styles.title, { color: colors.text }]}>我的文档</ThemedText> */}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleCreateBook}
+          style={[styles.createButton, { backgroundColor: colors.tint }]}
+        >
+          <ThemedText style={styles.createButtonText}>新建</ThemedText>
+        </Pressable>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <ScrollView contentContainerStyle={styles.listContent}>
+        {books.map((book) => (
+          <Pressable
+            key={book.id}
+            accessibilityRole="button"
+            onPress={() => handleOpenBook(book.id)}
+            style={[
+              styles.bookRow,
+              {
+                borderColor: `${colors.icon}22`,
+                backgroundColor: colorScheme === "dark" ? "#1E2225" : "#FAFBFC",
+              },
+            ]}
+          >
+            <View style={[styles.dot, { borderColor: colors.icon }]} />
+            <View style={styles.bookBody}>
+              <ThemedText style={[styles.bookTitle, { color: colors.text }]}>
+                {book.title}
+              </ThemedText>
+              <ThemedText style={[styles.bookMeta, { color: colors.icon }]}>
+                最近编辑 {formatDate(book.updatedAt)}
+              </ThemedText>
+            </View>
+            <ThemedText style={[styles.chevron, { color: colors.icon }]}>
+              ›
+            </ThemedText>
+          </Pressable>
+        ))}
+
+        {books.length === 0 ? (
+          <View style={[styles.empty, { borderColor: `${colors.icon}22` }]}>
+            <ThemedText style={[styles.emptyText, { color: colors.icon }]}>
+              还没有笔记，点击右上角新建一个。
+            </ThemedText>
+          </View>
+        ) : null}
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  kicker: {
+    fontSize: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: Fonts.rounded,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  createButton: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  createButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  listContent: {
+    paddingBottom: 24,
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  bookRow: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    marginTop: 2,
+  },
+  bookBody: {
+    flex: 1,
+    gap: 2,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  bookMeta: {
+    fontSize: 12,
+  },
+  chevron: {
+    fontSize: 22,
+    lineHeight: 22,
+  },
+  empty: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 4,
+  },
+  emptyText: {
+    fontSize: 13,
   },
 });

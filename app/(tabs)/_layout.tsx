@@ -12,7 +12,10 @@ export default function TabLayout() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: Colors[colorScheme ?? "light"].background }}
+      style={{
+        flex: 1,
+        backgroundColor: Colors[colorScheme ?? "light"].background,
+      }}
       edges={["top"]}
     >
       <Tabs
@@ -35,6 +38,9 @@ export default function TabLayout() {
           name="debug"
           options={{
             title: "Debug",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={28} name="chevron.right" color={color} />
+            ),
           }}
         />
       </Tabs>

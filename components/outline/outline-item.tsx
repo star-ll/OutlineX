@@ -1,12 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { useShallow } from "zustand/shallow";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -16,8 +9,6 @@ import { OutlineNode } from "@/types/outline";
 
 type OutlineItemProps = {
   item: string;
-  siblingIndex: number;
-  siblingCount: number;
   depth: number;
   indentSize: number;
   colors: {
@@ -26,22 +17,20 @@ type OutlineItemProps = {
     tint: string;
   };
   inputRefs: React.MutableRefObject<Map<string, TextInput>>;
-  onDragStateChange?: (isDragging: boolean) => void;
-  onDragTargetChange?: (targetIndex: number) => void;
+  onDragStart?: () => void;
+  isDragging?: boolean;
   renderChildren?: (children: string[], nextDepth: number) => React.ReactNode;
 };
 
 let emptyChildren: string[] = [];
 export default function OutlineItem({
   item: itemId,
-  siblingIndex,
-  siblingCount,
   depth,
   indentSize,
   colors,
   inputRefs,
-  onDragStateChange,
-  onDragTargetChange,
+  onDragStart,
+  isDragging = false,
   renderChildren,
 }: OutlineItemProps) {
   const item: OutlineNode = useOutlineStore((state) => state.dataMap[itemId])!;
@@ -52,7 +41,6 @@ export default function OutlineItem({
     updateItemText,
     indentItem,
     outdentItem,
-    moveItemWithinParent,
     removeItem,
     toggleCollapse,
   } = useOutlineStore(
@@ -62,7 +50,6 @@ export default function OutlineItem({
       updateItemText: s.updateItemText,
       indentItem: s.indentItem,
       outdentItem: s.outdentItem,
-      moveItemWithinParent: s.moveItemWithinParent,
       removeItem: s.removeItem,
       toggleCollapse: s.toggleCollapse,
     })),
@@ -77,78 +64,15 @@ export default function OutlineItem({
     useShallow((state) => state.childrenMap[itemId] ?? emptyChildren),
   );
   const hasChildren = !!children?.length;
-  const [dragHandleActive, setDragHandleActive] = useState(false);
-  const translateY = useSharedValue(0);
-  const dragging = useSharedValue(false);
-  const startIndex = useSharedValue(siblingIndex);
-
-  const handleRowStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withTiming(dragging.value ? 1.01 : 1) }],
-    opacity: withTiming(dragging.value ? 0.9 : 1),
-  }));
-
-  const dragHandleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const dragGesture = Gesture.Pan()
-    .activateAfterLongPress(240)
-    .onBegin(() => {
-      dragging.value = true;
-      startIndex.value = siblingIndex;
-      runOnJS(setActiveId)(item.id);
-      runOnJS(setDragHandleActive)(true);
-      if (onDragStateChange) {
-        runOnJS(onDragStateChange)(true);
-      }
-      if (onDragTargetChange) {
-        runOnJS(onDragTargetChange)(siblingIndex);
-      }
-    })
-    .onUpdate((event) => {
-      translateY.value = event.translationY;
-      const ROW_STEP = 36;
-      const shift = Math.round(event.translationY / ROW_STEP);
-      const target = Math.max(
-        0,
-        Math.min(startIndex.value + shift, siblingCount - 1),
-      );
-      if (onDragTargetChange) {
-        runOnJS(onDragTargetChange)(target);
-      }
-    })
-    .onEnd((event) => {
-      const ROW_STEP = 36;
-      const shift = Math.round(event.translationY / ROW_STEP);
-      const target = Math.max(
-        0,
-        Math.min(startIndex.value + shift, siblingCount - 1),
-      );
-      runOnJS(moveItemWithinParent)(item.id, target);
-    })
-    .onFinalize(() => {
-      dragging.value = false;
-      translateY.value = withTiming(0);
-      runOnJS(setDragHandleActive)(false);
-      if (onDragStateChange) {
-        runOnJS(onDragStateChange)(false);
-      }
-    });
-  const longPressGesture = Gesture.LongPress()
-    .minDuration(240)
-    .onStart(() => {
-      runOnJS(setDragHandleActive)(true);
-    });
-  const handleGesture = Gesture.Simultaneous(longPressGesture, dragGesture);
 
   return (
     <>
-      <Animated.View
+      <View
         style={[
-          handleRowStyle,
           styles.row,
           { paddingLeft: 12 + depth * indentSize },
           isActive && { backgroundColor: `${colors.tint}1A` },
+          isDragging && styles.draggingRow,
         ]}
       >
         <Pressable
@@ -173,19 +97,21 @@ export default function OutlineItem({
               <View style={styles.disclosureSpacer} />
             )}
           </Pressable>
-          <GestureDetector gesture={handleGesture}>
-            <Animated.View style={[styles.dragHandle, dragHandleStyle]}>
-              {dragHandleActive ? (
-                <IconSymbol
-                  size={16}
-                  color={colors.icon}
-                  name="line.3.horizontal"
-                />
-              ) : (
-                <View style={[styles.bullet, { borderColor: colors.icon }]} />
-              )}
-            </Animated.View>
-          </GestureDetector>
+          <Pressable
+            accessibilityRole="button"
+            onLongPress={() => {
+              setActiveId(item.id);
+              onDragStart?.();
+            }}
+            delayLongPress={240}
+            style={styles.dragHandle}
+          >
+            {isDragging ? (
+              <IconSymbol size={16} color={colors.icon} name="line.3.horizontal" />
+            ) : (
+              <View style={[styles.bullet, { borderColor: colors.icon }]} />
+            )}
+          </Pressable>
           <TextInput
             ref={(ref) => {
               if (ref) {
@@ -224,7 +150,7 @@ export default function OutlineItem({
             }}
           />
         </Pressable>
-      </Animated.View>
+      </View>
       {hasChildren && !collapsed ? renderChildren?.(children, depth + 1) : null}
     </>
   );
@@ -233,6 +159,10 @@ export default function OutlineItem({
 const styles = StyleSheet.create({
   row: {
     overflow: "visible",
+  },
+  draggingRow: {
+    opacity: 0.9,
+    transform: [{ scale: 1.01 }],
   },
   rowPressArea: {
     flexDirection: "row",

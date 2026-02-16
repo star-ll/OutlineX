@@ -19,6 +19,7 @@ type OutlineItemProps = {
   inputRefs: React.MutableRefObject<Map<string, TextInput>>;
   onDragStart?: () => void;
   isDragging?: boolean;
+  onInputFocusChange?: (focused: boolean) => void;
   renderChildren?: (children: string[], nextDepth: number) => React.ReactNode;
 };
 
@@ -31,6 +32,7 @@ export default function OutlineItem({
   inputRefs,
   onDragStart,
   isDragging = false,
+  onInputFocusChange,
   renderChildren,
 }: OutlineItemProps) {
   const item: OutlineNode = useOutlineStore((state) => state.dataMap[itemId])!;
@@ -122,7 +124,13 @@ export default function OutlineItem({
             }}
             value={item.text}
             onChangeText={(text) => updateItemText(item.id, text)}
-            onFocus={() => setActiveId(item.id)}
+            onFocus={() => {
+              setActiveId(item.id);
+              onInputFocusChange?.(true);
+            }}
+            onBlur={() => {
+              onInputFocusChange?.(false);
+            }}
             onSubmitEditing={() => addItemAfter(item.id)}
             returnKeyType="next"
             style={[

@@ -10,6 +10,11 @@ import { uuidV7 } from "@/utils/uuid";
 
 const ROOT_ID = "root";
 const outlinePersistenceScheduler = createOutlinePersistenceScheduler(250);
+const commitNextFrame = (commit: () => void) => {
+  requestAnimationFrame(() => {
+    commit();
+  });
+};
 
 const schedulePersist = (
   bookId: string,
@@ -269,7 +274,12 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
 
       return { childrenMap };
     }),
-  removeItem: (id) =>
+  removeItem: (id) => {
+    let deferredMaps: Pick<
+      OutlineState,
+      "dataMap" | "parentMap" | "childrenMap"
+    > | null = null;
+
     set((state) => {
       const dataMap = { ...state.dataMap };
       const parentMap = { ...state.parentMap };
@@ -311,11 +321,23 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
         true,
       );
 
-      return {
+      deferredMaps = {
         dataMap,
         parentMap,
         childrenMap,
+      };
+
+      return {
         activeId,
       };
-    }),
+    });
+
+    if (!deferredMaps) {
+      return;
+    }
+
+    commitNextFrame(() => {
+      set(() => ({ ...deferredMaps }));
+    });
+  },
 }));

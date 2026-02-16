@@ -79,4 +79,4 @@ Package manager: npm
 - web: `npm run web`
 - lint: `npm run lint`
 
-You MUST run `npm run lint` and `npm run android` after code changes to check compiler error.
+You MUST run `npm run lint` after code changes to check compiler error.

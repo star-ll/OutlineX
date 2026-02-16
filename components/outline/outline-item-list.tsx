@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
@@ -17,6 +17,8 @@ type OutlineItemListProps = {
     tint: string;
   };
   inputRefs: React.MutableRefObject<Map<string, TextInput>>;
+  onInputFocusChange?: (focused: boolean) => void;
+  onEmptyPress?: () => void;
 };
 
 type OutlineItemRowProps = {
@@ -32,6 +34,7 @@ type OutlineItemRowProps = {
   isDropTarget: boolean;
   drag: () => void;
   isActive: boolean;
+  onInputFocusChange?: (focused: boolean) => void;
 };
 
 const OutlineItemRow = memo(function OutlineItemRow({
@@ -43,18 +46,20 @@ const OutlineItemRow = memo(function OutlineItemRow({
   isDropTarget,
   drag,
   isActive,
+  onInputFocusChange,
 }: OutlineItemRowProps) {
   const renderChildren = useCallback(
     (children: string[], nextDepth: number) => (
-      <OutlineItemList
-        items={children}
-        level={nextDepth}
-        indentSize={indentSize}
-        colors={colors}
-        inputRefs={inputRefs}
-      />
-    ),
-    [colors, indentSize, inputRefs],
+        <OutlineItemList
+          items={children}
+          level={nextDepth}
+          indentSize={indentSize}
+          colors={colors}
+          inputRefs={inputRefs}
+          onInputFocusChange={onInputFocusChange}
+        />
+      ),
+    [colors, indentSize, inputRefs, onInputFocusChange],
   );
 
   return (
@@ -72,6 +77,7 @@ const OutlineItemRow = memo(function OutlineItemRow({
           inputRefs={inputRefs}
           onDragStart={drag}
           isDragging={isActive}
+          onInputFocusChange={onInputFocusChange}
           renderChildren={renderChildren}
         />
     </View>
@@ -84,6 +90,8 @@ function OutlineItemList({
   indentSize,
   colors,
   inputRefs,
+  onInputFocusChange,
+  onEmptyPress,
 }: OutlineItemListProps) {
   const moveItemWithinParent = useOutlineStore((state) => state.moveItemWithinParent);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
@@ -107,6 +115,7 @@ function OutlineItemList({
           colors={colors}
           inputRefs={inputRefs}
           isDropTarget={isDropTarget}
+          onInputFocusChange={onInputFocusChange}
           drag={() => {
             setDraggingItemId(item);
             setTargetIndex(index);
@@ -122,44 +131,51 @@ function OutlineItemList({
       indentSize,
       inputRefs,
       level,
+      onInputFocusChange,
       targetIndex,
     ],
   );
 
   return (
-    <DraggableFlatList
-      data={items}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      contentContainerStyle={styles.listContent}
-      keyboardShouldPersistTaps="handled"
-      autoscrollSpeed={120}
-      autoscrollThreshold={64}
-      activationDistance={1}
-      onPlaceholderIndexChange={(nextIndex) => {
-        setTargetIndex(nextIndex);
-      }}
-      onDragBegin={(index) => {
-        setDraggingItemId(items[index] ?? null);
-        setTargetIndex(index);
-      }}
-      onDragEnd={({ data, from, to }) => {
-        setDraggingItemId(null);
-        setTargetIndex(null);
-        if (from === to) {
-          return;
-        }
-        const movedId = data[to];
-        if (!movedId) {
-          return;
-        }
-        moveItemWithinParent(movedId, to);
-      }}
-      renderPlaceholder={() => (
-        <View style={[styles.placeholder, { backgroundColor: `${colors.tint}22` }]} />
-      )}
-      scrollEnabled={level === 0}
-    />
+    <Pressable
+      disabled={!(level === 0 && items.length === 0 && onEmptyPress)}
+      onPress={onEmptyPress}
+      style={level === 0 && items.length === 0 ? styles.emptyListPressArea : undefined}
+    >
+      <DraggableFlatList
+        data={items}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+        autoscrollSpeed={120}
+        autoscrollThreshold={64}
+        activationDistance={1}
+        onPlaceholderIndexChange={(nextIndex) => {
+          setTargetIndex(nextIndex);
+        }}
+        onDragBegin={(index) => {
+          setDraggingItemId(items[index] ?? null);
+          setTargetIndex(index);
+        }}
+        onDragEnd={({ data, from, to }) => {
+          setDraggingItemId(null);
+          setTargetIndex(null);
+          if (from === to) {
+            return;
+          }
+          const movedId = data[to];
+          if (!movedId) {
+            return;
+          }
+          moveItemWithinParent(movedId, to);
+        }}
+        renderPlaceholder={() => (
+          <View style={[styles.placeholder, { backgroundColor: `${colors.tint}22` }]} />
+        )}
+        scrollEnabled={level === 0}
+      />
+    </Pressable>
   );
 }
 
@@ -168,6 +184,9 @@ export default memo(OutlineItemList);
 const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 24,
+  },
+  emptyListPressArea: {
+    flex: 1,
   },
   itemBlock: {
     gap: 4,

@@ -19,6 +19,9 @@ const MAPPING = {
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
   'list.bullet.indent': 'format-list-bulleted',
+  plus: 'add',
+  'increase.indent': 'format-indent-increase',
+  'decrease.indent': 'format-indent-decrease',
 } as IconMapping;
 
 /**

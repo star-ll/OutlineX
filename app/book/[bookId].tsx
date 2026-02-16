@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 
 import OutlineItemList from "@/components/outline/outline-item-list";
+import OutlineKeyboardToolbar from "@/components/outline/outline-keyboard-toolbar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, Fonts } from "@/constants/theme";
@@ -36,6 +37,7 @@ export default function OutlineScreen() {
   const currentBookTitle =
     books.find((book) => book.id === bookId)?.title ?? "未命名笔记";
   const [titleText, setTitleText] = useState(currentBookTitle);
+  const [isOutlineInputFocused, setIsOutlineInputFocused] = useState(false);
 
   useEffect(() => {
     if (!bookId) {
@@ -56,9 +58,11 @@ export default function OutlineScreen() {
     if (!activeId) {
       return;
     }
-    requestAnimationFrame(() => {
-      inputRefs.current.get(activeId)?.focus();
-    });
+    inputRefs.current.get(activeId)?.focus();
+
+    // requestAnimationFrame(() => {
+    //   inputRefs.current.get(activeId)?.focus();
+    // });
   }, [activeId]);
 
   const handleToolbarAdd = useCallback(() => {
@@ -68,6 +72,12 @@ export default function OutlineScreen() {
     }
     addItemAfter();
   }, [activeId, addItemAfter]);
+  const handleEmptyOutlinePress = useCallback(() => {
+    if (items.length > 0) {
+      return;
+    }
+    addItemAfter();
+  }, [addItemAfter, items.length]);
 
   const handleToolbarIndent = useCallback(() => {
     if (activeId) {
@@ -108,6 +118,7 @@ export default function OutlineScreen() {
         <TextInput
           value={titleText}
           onChangeText={setTitleText}
+          onFocus={() => setIsOutlineInputFocused(false)}
           onBlur={() => void handleSaveTitle()}
           onSubmitEditing={() => void handleSaveTitle()}
           placeholder="未命名笔记"
@@ -118,44 +129,6 @@ export default function OutlineScreen() {
             { fontFamily: Fonts.rounded, color: colors.text },
           ]}
         />
-        <View style={styles.toolbar}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleToolbarAdd}
-            style={[styles.toolbarButton, { borderColor: colors.tint }]}
-          >
-            <ThemedText style={[styles.toolbarText, { color: colors.tint }]}>
-              Add
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleToolbarIndent}
-            style={[styles.toolbarButton, { borderColor: colors.icon }]}
-          >
-            <ThemedText style={[styles.toolbarText, { color: colors.icon }]}>
-              Indent
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleToolbarOutdent}
-            style={[styles.toolbarButton, { borderColor: colors.icon }]}
-          >
-            <ThemedText style={[styles.toolbarText, { color: colors.icon }]}>
-              Outdent
-            </ThemedText>
-          </Pressable>
-          {/* <Pressable
-            accessibilityRole="button"
-            onPress={handleToolbarCollapse}
-            style={[styles.toolbarButton, { borderColor: colors.icon }]}
-          >
-            <ThemedText style={[styles.toolbarText, { color: colors.icon }]}>
-              Toggle
-            </ThemedText>
-          </Pressable> */}
-        </View>
       </View>
 
       <OutlineItemList
@@ -163,12 +136,25 @@ export default function OutlineScreen() {
         indentSize={INDENT_SIZE}
         colors={colors}
         inputRefs={inputRefs}
+        onInputFocusChange={setIsOutlineInputFocused}
+        onEmptyPress={handleEmptyOutlinePress}
       />
       <View style={styles.footer}>
         <ThemedText style={[styles.footerText, { color: colors.icon }]}>
           Enter to add, Tab to indent, Shift+Tab to outdent.
         </ThemedText>
       </View>
+      <OutlineKeyboardToolbar
+        visible={isOutlineInputFocused}
+        onAdd={handleToolbarAdd}
+        onIndent={handleToolbarIndent}
+        onOutdent={handleToolbarOutdent}
+        colors={{
+          icon: colors.icon,
+          tint: colors.tint,
+          background: colors.background,
+        }}
+      />
     </ThemedView>
   );
 }
@@ -188,21 +174,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     paddingVertical: 2,
-  },
-  toolbar: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  toolbarButton: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  toolbarText: {
-    fontSize: 13,
-    fontWeight: "600",
   },
   footer: {
     paddingBottom: 12,

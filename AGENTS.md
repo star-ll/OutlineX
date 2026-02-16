@@ -17,7 +17,8 @@ An outline notes app that is based on React Native.
 - lib:
   - algorithms: public algorithms, like debounce, stack, queue...
   - features: convergence core logic, between UI and DB/Schedule/...
-  - storage: db or cache
+  - storage: db or cache.
+  - scheduler: A scheduler, unlike React Scheduler, is responsible for system source rather than UI update.
 - skills: prompt templates & agent playbooks (non-runtime, docs only).
 
 ## System Architecture
@@ -43,9 +44,14 @@ Feature layer includes:
 - Must not directly manipulate UI components.
 - May call `lib/`
 
+Scheduler layer includes:
+
+- Must name task.id from `lib/scheduler/task-id`
+- Task.id must have a name prefix, like `storage-${id}`.
+
 ## Dependency Rules
 
-- UI layer -> State layer -> Feature layer -> (Storage layer, Scheduler layer) -> Algorithms layer
+- UI layer -> State layer -> Feature layer -> (Storage layer, Scheduler layer, etc.) -> Algorithms layer
 - UI/State MUST NOT import from `lib/storage/**` directly (use `lib/features/**`).
 - `lib/algorithms/**` MUST be pure (no IO, no React Native APIs).
 - `lib/storage/**` MUST NOT depend on UI/State/Feature.
@@ -57,6 +63,7 @@ If you modify these files, you **must** update `DESCRIPTION.md` in same director
 - `lib/storage/**`
 - `lib/algorithms/**`
 - `lib/features/**`
+- `lib/scheduler/**`
 
 `DESCRIPTION.md` format:
 

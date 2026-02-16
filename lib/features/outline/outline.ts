@@ -1,4 +1,5 @@
-import { debounce } from "@/lib/algorithms/debounce";
+import { Priority, Scheduler } from "@/lib/scheduler";
+import { getStorageSchedulerId } from "@/lib/scheduler/task-id";
 import {
   clearRowsByBook,
   insertBookRowIfNotExists,
@@ -18,6 +19,9 @@ type PersistPayload = {
 };
 
 export function createOutlinePersistenceScheduler(waitMs = 250) {
+  const scheduler = new Scheduler();
+  const scheduledTaskIds = new Set<ReturnType<typeof getStorageSchedulerId>>();
+
   const persist = async ({ bookId, maps }: PersistPayload) => {
     try {
       await saveOutlineMaps(bookId, maps);
@@ -26,20 +30,26 @@ export function createOutlinePersistenceScheduler(waitMs = 250) {
     }
   };
 
-  const debouncedPersist = debounce((payload: PersistPayload) => {
-    void persist(payload);
-  }, waitMs);
-
   return {
     schedule(payload: PersistPayload, immediate = false) {
-      if (immediate) {
-        debouncedPersist.flush(payload);
-        return;
-      }
-      debouncedPersist(payload);
+      const taskId = getStorageSchedulerId(`outline-persist-${payload.bookId}`);
+      scheduledTaskIds.add(taskId);
+
+      scheduler.push({
+        id: taskId,
+        priority: immediate ? Priority.Sync : Priority.Default,
+        delayMs: immediate ? 0 : waitMs,
+        callback: async () => {
+          await persist(payload);
+          scheduledTaskIds.delete(taskId);
+        },
+      });
     },
     cancel() {
-      debouncedPersist.cancel();
+      for (const taskId of scheduledTaskIds) {
+        scheduler.cancel(taskId);
+      }
+      scheduledTaskIds.clear();
     },
   };
 }

@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
@@ -50,15 +50,15 @@ const OutlineItemRow = memo(function OutlineItemRow({
 }: OutlineItemRowProps) {
   const renderChildren = useCallback(
     (children: string[], nextDepth: number) => (
-        <OutlineItemList
-          items={children}
-          level={nextDepth}
-          indentSize={indentSize}
-          colors={colors}
-          inputRefs={inputRefs}
-          onInputFocusChange={onInputFocusChange}
-        />
-      ),
+      <OutlineItemList
+        items={children}
+        level={nextDepth}
+        indentSize={indentSize}
+        colors={colors}
+        inputRefs={inputRefs}
+        onInputFocusChange={onInputFocusChange}
+      />
+    ),
     [colors, indentSize, inputRefs, onInputFocusChange],
   );
 
@@ -66,20 +66,23 @@ const OutlineItemRow = memo(function OutlineItemRow({
     <View
       style={[
         styles.itemBlock,
-        isDropTarget && { borderBottomColor: colors.tint, borderBottomWidth: 2 },
+        isDropTarget && {
+          borderBottomColor: colors.tint,
+          borderBottomWidth: 2,
+        },
       ]}
     >
-        <OutlineItem
-          item={itemId}
-          depth={level}
-          indentSize={indentSize}
-          colors={colors}
-          inputRefs={inputRefs}
-          onDragStart={drag}
-          isDragging={isActive}
-          onInputFocusChange={onInputFocusChange}
-          renderChildren={renderChildren}
-        />
+      <OutlineItem
+        item={itemId}
+        depth={level}
+        indentSize={indentSize}
+        colors={colors}
+        inputRefs={inputRefs}
+        onDragStart={drag}
+        isDragging={isActive}
+        onInputFocusChange={onInputFocusChange}
+        renderChildren={renderChildren}
+      />
     </View>
   );
 });
@@ -93,11 +96,14 @@ function OutlineItemList({
   onInputFocusChange,
   onEmptyPress,
 }: OutlineItemListProps) {
-  const moveItemWithinParent = useOutlineStore((state) => state.moveItemWithinParent);
+  const moveItemWithinParent = useOutlineStore(
+    (state) => state.moveItemWithinParent,
+  );
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
 
   const keyExtractor = useCallback((item: string) => item, []);
+  const isRootEmpty = level === 0 && items.length === 0;
 
   const renderItem = useCallback(
     ({ item, getIndex, drag, isActive }: RenderItemParams<string>) => {
@@ -138,10 +144,15 @@ function OutlineItemList({
 
   return (
     <Pressable
-      disabled={!(level === 0 && items.length === 0 && onEmptyPress)}
+      disabled={!(isRootEmpty && onEmptyPress)}
       onPress={onEmptyPress}
-      style={level === 0 && items.length === 0 ? styles.emptyListPressArea : undefined}
+      style={isRootEmpty ? styles.emptyListPressArea : undefined}
     >
+      {isRootEmpty ? (
+        <Text style={[styles.emptyListHint, { color: colors.icon }]}>
+          Tap anywhere to add a node
+        </Text>
+      ) : null}
       <DraggableFlatList
         data={items}
         renderItem={renderItem}
@@ -171,7 +182,12 @@ function OutlineItemList({
           moveItemWithinParent(movedId, to);
         }}
         renderPlaceholder={() => (
-          <View style={[styles.placeholder, { backgroundColor: `${colors.tint}22` }]} />
+          <View
+            style={[
+              styles.placeholder,
+              { backgroundColor: `${colors.tint}22` },
+            ]}
+          />
         )}
         scrollEnabled={level === 0}
       />
@@ -187,6 +203,12 @@ const styles = StyleSheet.create({
   },
   emptyListPressArea: {
     flex: 1,
+  },
+  emptyListHint: {
+    textAlign: "center",
+    paddingTop: 16,
+    paddingHorizontal: 24,
+    fontSize: 14,
   },
   itemBlock: {
     gap: 4,

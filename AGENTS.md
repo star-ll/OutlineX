@@ -2,6 +2,8 @@
 
 An outline notes app that is based on React Native.
 
+This project uses Expo Development Build (dev client), not Expo Go.
+
 # Code
 
 ## Table of contents

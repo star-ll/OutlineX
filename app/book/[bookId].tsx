@@ -1,10 +1,11 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 
 import OutlineItemList from "@/components/outline/outline-item-list";
 import OutlineKeyboardToolbar from "@/components/outline/outline-keyboard-toolbar";
-import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -22,6 +23,10 @@ export default function OutlineScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const inputRefs = useRef(new Map<string, TextInput>());
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  const footerAnimatedStyle = useAnimatedStyle(() => ({
+    height: keyboardHeight.value,
+  }));
   const books = useBookStore((state) => state.books);
   const hydrateBooks = useBookStore((state) => state.hydrate);
   const renameBook = useBookStore((state) => state.renameBook);
@@ -139,11 +144,7 @@ export default function OutlineScreen() {
         onInputFocusChange={setIsOutlineInputFocused}
         onEmptyPress={handleEmptyOutlinePress}
       />
-      <View style={styles.footer}>
-        <ThemedText style={[styles.footerText, { color: colors.icon }]}>
-          Enter to add, Tab to indent, Shift+Tab to outdent.
-        </ThemedText>
-      </View>
+      <Animated.View style={[styles.footer, footerAnimatedStyle]} />
       <OutlineKeyboardToolbar
         visible={isOutlineInputFocused}
         onAdd={handleToolbarAdd}
@@ -176,8 +177,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   footer: {
-    paddingBottom: 12,
-    paddingTop: 8,
+    flexShrink: 0,
   },
   footerText: {
     fontSize: 12,

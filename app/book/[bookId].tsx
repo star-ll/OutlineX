@@ -1,8 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 
 import OutlineItemList from "@/components/outline/outline-item-list";
 import OutlineKeyboardToolbar from "@/components/outline/outline-keyboard-toolbar";
@@ -23,10 +27,6 @@ export default function OutlineScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const inputRefs = useRef(new Map<string, TextInput>());
-  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
-  const footerAnimatedStyle = useAnimatedStyle(() => ({
-    height: keyboardHeight.value,
-  }));
   const books = useBookStore((state) => state.books);
   const hydrateBooks = useBookStore((state) => state.hydrate);
   const renameBook = useBookStore((state) => state.renameBook);
@@ -119,32 +119,36 @@ export default function OutlineScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.header}>
-        <TextInput
-          value={titleText}
-          onChangeText={setTitleText}
-          onFocus={() => setIsOutlineInputFocused(false)}
-          onBlur={() => void handleSaveTitle()}
-          onSubmitEditing={() => void handleSaveTitle()}
-          placeholder="未命名笔记"
-          placeholderTextColor={colors.icon}
-          selectionColor={colors.tint}
-          style={[
-            styles.title,
-            { fontFamily: Fonts.rounded, color: colors.text },
-          ]}
-        />
-      </View>
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.header}>
+          <TextInput
+            value={titleText}
+            onChangeText={setTitleText}
+            onFocus={() => setIsOutlineInputFocused(false)}
+            onBlur={() => void handleSaveTitle()}
+            onSubmitEditing={() => void handleSaveTitle()}
+            placeholder="未命名笔记"
+            placeholderTextColor={colors.icon}
+            selectionColor={colors.tint}
+            style={[
+              styles.title,
+              { fontFamily: Fonts.rounded, color: colors.text },
+            ]}
+          />
+        </View>
 
-      <OutlineItemList
-        items={items}
-        indentSize={INDENT_SIZE}
-        colors={colors}
-        inputRefs={inputRefs}
-        onInputFocusChange={setIsOutlineInputFocused}
-        onEmptyPress={handleEmptyOutlinePress}
-      />
-      <Animated.View style={[styles.footer, footerAnimatedStyle]} />
+        <OutlineItemList
+          items={items}
+          indentSize={INDENT_SIZE}
+          colors={colors}
+          inputRefs={inputRefs}
+          onInputFocusChange={setIsOutlineInputFocused}
+          onEmptyPress={handleEmptyOutlinePress}
+        />
+      </KeyboardAvoidingView>
       <OutlineKeyboardToolbar
         visible={isOutlineInputFocused}
         onAdd={handleToolbarAdd}
@@ -166,6 +170,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  content: {
+    flex: 1,
+  },
   header: {
     marginBottom: 12,
     gap: 12,
@@ -175,11 +182,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     paddingVertical: 2,
-  },
-  footer: {
-    flexShrink: 0,
-  },
-  footerText: {
-    fontSize: 12,
   },
 });

@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 
+import { OUTLINE_KEYBOARD_TOOLBAR_HEIGHT } from "@/components/outline/constants";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
 type OutlineKeyboardToolbarProps = {
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     elevation: 100,
   },
   toolbarContent: {
-    minHeight: 50,
+    minHeight: OUTLINE_KEYBOARD_TOOLBAR_HEIGHT,
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",

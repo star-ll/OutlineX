@@ -1,9 +1,18 @@
-import React, { memo, useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
 
+import { OUTLINE_KEYBOARD_TOOLBAR_HEIGHT } from "@/components/outline/constants";
 import OutlineItem from "@/components/outline/outline-item";
 import { useOutlineStore } from "@/stores/outline";
 
@@ -31,7 +40,6 @@ type OutlineItemRowProps = {
     tint: string;
   };
   inputRefs: React.MutableRefObject<Map<string, TextInput>>;
-  isDropTarget: boolean;
   drag: () => void;
   isActive: boolean;
   onInputFocusChange?: (focused: boolean) => void;
@@ -43,7 +51,6 @@ const OutlineItemRow = memo(function OutlineItemRow({
   indentSize,
   colors,
   inputRefs,
-  isDropTarget,
   drag,
   isActive,
   onInputFocusChange,
@@ -63,15 +70,7 @@ const OutlineItemRow = memo(function OutlineItemRow({
   );
 
   return (
-    <View
-      style={[
-        styles.itemBlock,
-        isDropTarget && {
-          borderBottomColor: colors.tint,
-          borderBottomWidth: 2,
-        },
-      ]}
-    >
+    <View style={styles.itemBlock}>
       <OutlineItem
         item={itemId}
         depth={level}
@@ -99,20 +98,80 @@ function OutlineItemList({
   const moveItemWithinParent = useOutlineStore(
     (state) => state.moveItemWithinParent,
   );
-  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
+  const activeId = useOutlineStore((state) => state.activeId);
+  const listRef = useRef<FlatList<string>>(null);
+  const listViewportRef = useRef<View>(null);
+  const scrollOffsetRef = useRef(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [listViewportHeight, setListViewportHeight] = useState(0);
 
   const keyExtractor = useCallback((item: string) => item, []);
   const isRootEmpty = level === 0 && items.length === 0;
+  const isRootList = level === 0;
+
+  useEffect(() => {
+    if (!isRootList) {
+      return;
+    }
+    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [isRootList]);
+
+  useEffect(() => {
+    if (!isRootList || !activeId || listViewportHeight === 0) {
+      return;
+    }
+
+    const activeInput = inputRefs.current.get(activeId);
+    if (!activeInput) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      activeInput.measureLayout(
+        listViewportRef.current as never,
+        (_x, y, _w, h) => {
+          const reservedBottom =
+            keyboardHeight > 0
+              ? keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT
+              : 0;
+          const visibleBottom = Math.max(0, listViewportHeight - reservedBottom);
+          const margin = 12;
+          const rowTop = y;
+          const rowBottom = y + h;
+
+          let nextOffset = scrollOffsetRef.current;
+
+          if (rowBottom + margin > visibleBottom) {
+            nextOffset += rowBottom + margin - visibleBottom;
+          } else if (rowTop - margin < 0) {
+            nextOffset += rowTop - margin;
+          }
+
+          nextOffset = Math.max(0, nextOffset);
+
+          if (Math.abs(nextOffset - scrollOffsetRef.current) > 1) {
+            listRef.current?.scrollToOffset({ offset: nextOffset, animated: true });
+          }
+        },
+        () => {},
+      );
+    }, 30);
+
+    return () => clearTimeout(timer);
+  }, [activeId, inputRefs, isRootList, keyboardHeight, listViewportHeight]);
 
   const renderItem = useCallback(
-    ({ item, getIndex, drag, isActive }: RenderItemParams<string>) => {
-      const index = getIndex() ?? 0;
-      const isDropTarget =
-        draggingItemId != null &&
-        draggingItemId !== item &&
-        targetIndex === index;
-
+    ({ item, drag, isActive }: RenderItemParams<string>) => {
       return (
         <OutlineItemRow
           itemId={item}
@@ -120,84 +179,91 @@ function OutlineItemList({
           indentSize={indentSize}
           colors={colors}
           inputRefs={inputRefs}
-          isDropTarget={isDropTarget}
           onInputFocusChange={onInputFocusChange}
-          drag={() => {
-            setDraggingItemId(item);
-            setTargetIndex(index);
-            drag();
-          }}
+          drag={drag}
           isActive={isActive}
         />
       );
     },
-    [
-      colors,
-      draggingItemId,
-      indentSize,
-      inputRefs,
-      level,
-      onInputFocusChange,
-      targetIndex,
-    ],
+    [colors, indentSize, inputRefs, level, onInputFocusChange],
   );
 
   return (
-    <Pressable
-      disabled={!(isRootEmpty && onEmptyPress)}
-      onPress={onEmptyPress}
-      style={isRootEmpty ? styles.emptyListPressArea : undefined}
+    <View
+      ref={listViewportRef}
+      style={isRootList ? styles.rootListPressArea : undefined}
+      onLayout={
+        isRootList
+          ? (event) => setListViewportHeight(event.nativeEvent.layout.height)
+          : undefined
+      }
     >
-      {isRootEmpty ? (
-        <Text style={[styles.emptyListHint, { color: colors.icon }]}>
-          Tap anywhere to add a node
-        </Text>
-      ) : null}
-      <DraggableFlatList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-        autoscrollSpeed={120}
-        autoscrollThreshold={64}
-        activationDistance={1}
-        onPlaceholderIndexChange={(nextIndex) => {
-          setTargetIndex(nextIndex);
-        }}
-        onDragBegin={(index) => {
-          setDraggingItemId(items[index] ?? null);
-          setTargetIndex(index);
-        }}
-        onDragEnd={({ data, from, to }) => {
-          setDraggingItemId(null);
-          setTargetIndex(null);
-          if (from === to) {
-            return;
+      <Pressable
+        disabled={!(isRootEmpty && onEmptyPress)}
+        onPress={onEmptyPress}
+        style={isRootEmpty ? styles.emptyListPressArea : undefined}
+      >
+        {isRootEmpty ? (
+          <Text style={[styles.emptyListHint, { color: colors.icon }]}>
+            Tap anywhere to add a node
+          </Text>
+        ) : null}
+        <DraggableFlatList
+          ref={isRootList ? listRef : undefined}
+          data={items}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={[
+            styles.listContent,
+            isRootList && keyboardHeight > 0
+              ? {
+                  paddingBottom:
+                    24 + keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT,
+                }
+              : undefined,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          autoscrollSpeed={120}
+          autoscrollThreshold={64}
+          activationDistance={1}
+          onDragEnd={({ data, from, to }) => {
+            if (from === to) {
+              return;
+            }
+            const movedId = data[to];
+            if (!movedId) {
+              return;
+            }
+            moveItemWithinParent(movedId, to);
+          }}
+          onScrollOffsetChange={
+            isRootList
+              ? (offset) => {
+                  scrollOffsetRef.current = offset;
+                }
+              : undefined
           }
-          const movedId = data[to];
-          if (!movedId) {
-            return;
-          }
-          moveItemWithinParent(movedId, to);
-        }}
-        renderPlaceholder={() => (
-          <View
-            style={[
-              styles.placeholder,
-              { backgroundColor: `${colors.tint}22` },
-            ]}
-          />
-        )}
-        scrollEnabled={level === 0}
-      />
-    </Pressable>
+          renderPlaceholder={() => (
+            <View
+              style={[
+                styles.placeholder,
+                { backgroundColor: `${colors.tint}22` },
+              ]}
+            />
+          )}
+          scrollEnabled={isRootList}
+        />
+      </Pressable>
+    </View>
   );
 }
 
 export default memo(OutlineItemList);
 
 const styles = StyleSheet.create({
+  rootListPressArea: {
+    flex: 1,
+  },
   listContent: {
     paddingBottom: 24,
   },

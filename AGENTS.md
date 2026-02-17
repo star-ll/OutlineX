@@ -82,3 +82,7 @@ Package manager: npm
 - lint: `npm run lint`
 
 You MUST run `npm run lint` after code changes to check compiler error.
+
+# AI Code Constraint
+
+**You Must follow the rules at the top of every file.**

@@ -1,3 +1,8 @@
+/**
+ * AI CODE RULES:
+ * 1. If you need to move the cursor(activeId), set the activeId first and then set the node, refer to removeItem.
+ */
+
 import { create } from "zustand";
 
 import { DEFAULT_BOOK_ID } from "@/constants/db";

@@ -1,0 +1,1 @@
+export const OUTLINE_KEYBOARD_TOOLBAR_HEIGHT = 50;

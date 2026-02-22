@@ -205,7 +205,7 @@ function OutlineItemList({
       >
         {isRootEmpty ? (
           <Text style={[styles.emptyListHint, { color: colors.icon }]}>
-            Tap anywhere to add a node
+            点击任意位置添加节点
           </Text>
         ) : null}
         <DraggableFlatList

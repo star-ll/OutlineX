@@ -1,7 +1,13 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -26,6 +32,8 @@ export default function IndexScreen() {
     colorScheme === "dark" ? "#ECEDEE" : colors.tint;
   const createButtonTextColor = colorScheme === "dark" ? "#151718" : "#FFFFFF";
   const books = useBookStore((state) => state.books);
+  const hasHydrated = useBookStore((state) => state.hasHydrated);
+  const isLoading = useBookStore((state) => state.isLoading);
   const hydrate = useBookStore((state) => state.hydrate);
   const refreshBooks = useBookStore((state) => state.refreshBooks);
   const createBook = useBookStore((state) => state.createBook);
@@ -52,6 +60,9 @@ export default function IndexScreen() {
     [router],
   );
 
+  const showInitialLoading = !hasHydrated && isLoading;
+  const showEmpty = hasHydrated && !isLoading && books.length === 0;
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.headerRow}>
@@ -63,6 +74,8 @@ export default function IndexScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="新建笔记"
+          accessibilityHint="创建一个新的大纲笔记并进入编辑"
           onPress={handleCreateBook}
           style={[
             styles.createButton,
@@ -78,10 +91,21 @@ export default function IndexScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.listContent}>
+        {showInitialLoading ? (
+          <View style={[styles.loadingCard, { borderColor: `${colors.icon}22` }]}>
+            <ActivityIndicator color={colors.tint} />
+            <ThemedText style={[styles.loadingText, { color: colors.icon }]}>
+              正在加载笔记...
+            </ThemedText>
+          </View>
+        ) : null}
+
         {books.map((book) => (
           <Pressable
             key={book.id}
             accessibilityRole="button"
+            accessibilityLabel={`打开笔记：${book.title}`}
+            accessibilityHint={`最近编辑时间 ${formatDate(book.updatedAt)}，点击进入详情`}
             onPress={() => handleOpenBook(book.id)}
             style={[
               styles.bookRow,
@@ -106,7 +130,7 @@ export default function IndexScreen() {
           </Pressable>
         ))}
 
-        {books.length === 0 ? (
+        {showEmpty ? (
           <View style={[styles.empty, { borderColor: `${colors.icon}22` }]}>
             <ThemedText style={[styles.emptyText, { color: colors.icon }]}>
               还没有笔记，点击右上角新建一个。
@@ -190,6 +214,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   emptyText: {
+    fontSize: 13,
+  },
+  loadingCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  loadingText: {
     fontSize: 13,
   },
 });

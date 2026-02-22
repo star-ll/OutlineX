@@ -40,26 +40,32 @@ export default function OutlineKeyboardToolbar({
         ]}
       >
         <Pressable
-          accessibilityLabel="Add item"
+          accessibilityLabel="新增节点"
+          accessibilityHint="在当前节点后新增一个同级节点"
           accessibilityRole="button"
           onPress={onAdd}
           style={[styles.iconButton, { borderColor: colors.tint }]}
+          hitSlop={8}
         >
           <IconSymbol name="plus" size={16} color={colors.tint} />
         </Pressable>
         <Pressable
-          accessibilityLabel="Indent item"
+          accessibilityLabel="增加缩进"
+          accessibilityHint="将当前节点缩进为上一个同级节点的子节点"
           accessibilityRole="button"
           onPress={onIndent}
           style={[styles.iconButton, { borderColor: colors.icon }]}
+          hitSlop={8}
         >
           <IconSymbol name="increase.indent" size={16} color={colors.icon} />
         </Pressable>
         <Pressable
-          accessibilityLabel="Outdent item"
+          accessibilityLabel="减少缩进"
+          accessibilityHint="将当前节点提升到上一级"
           accessibilityRole="button"
           onPress={onOutdent}
           style={[styles.iconButton, { borderColor: colors.icon }]}
+          hitSlop={8}
         >
           <IconSymbol name="decrease.indent" size={16} color={colors.icon} />
         </Pressable>
@@ -87,10 +93,10 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   iconButton: {
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderWidth: 1,
-    borderRadius: 17,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -83,8 +83,10 @@ export default function OutlineItem({
         >
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={collapsed ? "展开子节点" : "折叠子节点"}
             onPress={() => (hasChildren ? toggleCollapse(item.id) : null)}
             style={styles.disclosure}
+            hitSlop={8}
           >
             {hasChildren ? (
               <IconSymbol
@@ -101,12 +103,14 @@ export default function OutlineItem({
           </Pressable>
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="拖拽排序"
             onLongPress={() => {
               setActiveId(item.id);
               onDragStart?.();
             }}
             delayLongPress={240}
             style={styles.dragHandle}
+            hitSlop={8}
           >
             {isDragging ? (
               <IconSymbol size={16} color={colors.icon} name="line.3.horizontal" />
@@ -140,7 +144,7 @@ export default function OutlineItem({
                 fontFamily: Fonts.sans,
               },
             ]}
-            placeholder="Write a note..."
+            placeholder="输入内容..."
             placeholderTextColor={colors.icon}
             blurOnSubmit={false}
             onKeyPress={(event) => {
@@ -179,21 +183,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   disclosure: {
-    width: 22,
-    height: 22,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
   disclosureSpacer: {
-    width: 14,
-    height: 14,
+    width: 24,
+    height: 24,
   },
   dragHandle: {
-    width: 22,
-    height: 22,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginRight: 6,
   },
   bullet: {
     width: 8,

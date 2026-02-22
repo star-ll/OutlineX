@@ -60,9 +60,10 @@ If the user explicitly specifies one or more agents,
 you must automatically activate and use the corresponding skills defined in the agents configuration, and keep these rules.
 
 - dev: allow change any layer.
-- ui: auto use skills/agents-ui. ONLY change UI layer and State layer
 - test: ONLY change `/test/**`
-- default: when no agent is explicitly specified, behave as developer.
+- ui: auto use skills/agents-ui. ONLY change UI layer and State layer
+- product: ONLY read UI and State layer, but forbidden to change
+- default: when no agent is explicitly specified, behave as developer
 
 YOU MUST first tell me your agent. Then, you MUST create and switch to a new branch before making any changes. Branch name is `agents/<agent name, like ui or dev>/<short-task-name>`
 

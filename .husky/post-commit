@@ -1,3 +1,12 @@
 #!/bin/sh
+set -e
 
+git_dir="$(git rev-parse --git-dir)"
+verify_flag="$git_dir/.codex-verified-$PPID"
+
+if [ ! -f "$verify_flag" ]; then
+  exit 0
+fi
+
+rm -f "$verify_flag"
 cat ./skills/ai-review/SKILL.md | npx codex exec -

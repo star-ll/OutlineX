@@ -54,20 +54,19 @@ Any new dependency MUST be explicitly confirmed by the user/owner before merging
 
 # Agents
 
-system includes:
+Agent Routing Rules:
 
-- agents-ui: skills/agents-ui
+If the user explicitly specifies one or more agents,
+you must automatically activate and use the corresponding skills defined in the agents configuration, and keep these rules.
 
-First, you should check out a new branch. Branch name is `agents/<skill>/<short-task-name>`
+- dev: allow change any layer.
+- ui: auto use skills/agents-ui. ONLY change UI layer and State layer
+- test: ONLY change `/test/**`
+- default: when no agent is explicitly specified, behave as developer.
+
+YOU MUST first tell me your agent. Then, you MUST create and switch to a new branch before making any changes. Branch name is `agents/<agent name, like ui or dev>/<short-task-name>`
 
 # Commands
-
-Package manager: npm
-
-- android: `npm run android`
-- ios: `npm run ios`
-- web: `npm run web`
-- lint: `npm run lint`
 
 You MUST run `npm run lint` after code changes to check compiler error.
 

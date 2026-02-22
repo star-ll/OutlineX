@@ -8,19 +8,19 @@ This project uses Expo Development Build (dev client), not Expo Go.
 
 ## Table of contents
 
-- app:
-- assets: static sources.
-- components: public componnets, like outline-item component.
-- constants: constatns, like sql.
-- scripts: some execution script.
+- app: UI screen and route components.
+- assets: static assets.
+- components: shared UI components.
+- constants: constants and configuration.
+- scripts: executable scripts.
 - test: test files.
-- utils: public util methods.
-- hooks: public react hooks.
+- utils: shared utility methods.
+- hooks: shared React hooks.
 - lib:
-  - algorithms: public algorithms, like debounce, stack, queue...
-  - features: convergence core logic, between UI and DB/Schedule/...
-  - storage: db or cache.
-  - scheduler: A scheduler, unlike React Scheduler, is responsible for system source rather than UI update.
+  - algorithms: pure reusable algorithms (debounce, stack, queue, etc.).
+  - features: business logic APIs for UI/State.
+  - storage: db/cache layer.
+  - scheduler: system-level scheduling (not React UI scheduling).
 - skills: prompt templates & agent playbooks (non-runtime, docs only).
 
 ## System Architecture
@@ -32,45 +32,15 @@ This project uses Expo Development Build (dev client), not Expo Go.
 - Scheduler layer
 - Algorithms layer
 
-State layer includes:
-
-- Based on Zustand, Context and others(like custom tree in memory).
-- Supply State for UI.
-- May call `lib/features`（Feature layer）.
-- Must not directly call Scheduler and Storage.
-
-Feature layer includes:
-
-- Core business logic
-- Supply API for UI layer or State layer based on FP, OOP, etc.
-- Must not directly manipulate UI components.
-- May call `lib/`
-
-Scheduler layer includes:
-
-- Must name task.id from `lib/scheduler/task-id`
-- Task.id must have a name prefix, like `storage-${id}`.
-
-## Dependency Rules
-
-- UI layer -> State layer -> Feature layer -> (Storage layer, Scheduler layer, etc.) -> Algorithms layer
-- UI/State MUST NOT import from `lib/storage/**` directly (use `lib/features/**`).
-- `lib/algorithms/**` MUST be pure (no IO, no React Native APIs).
-- `lib/storage/**` MUST NOT depend on UI/State/Feature.
+Directory-specific and layer dependency rules are defined in module-level `AGENTS.override.md` files.
 
 ## Code Constraint
 
-If you modify these files, you **must** update `DESCRIPTION.md` in same directory.
+### Review
 
-- `lib/storage/**`
-- `lib/algorithms/**`
-- `lib/features/**`
-- `lib/scheduler/**`
+After any code generation, summarize changes + testing steps in a short bullet list.
 
-`DESCRIPTION.md` format:
-
-- ## API (exports, params, returns, errors)
-- ## Changes (date + summary + breaking changes if any)
+Document-first and Test-first rules for specific directories are defined in module-level `AGENTS.override.md` files.
 
 # Commands
 

@@ -1,12 +1,11 @@
 ---
 name: ai-review
-description: 严格的代码审计技能，仅基于外部传入的 `git diff HEAD` 文本进行安全、代码质量、架构与工程约束审计。Use when asked to review patch/diff changes for high-risk issues, especially security vulnerabilities, permission bypass, sensitive data exposure, serious reliability risks, or architecture constraint violations. Do not use for full-repo scan, style suggestions, or speculative findings.
+description: 严格的代码审计技能，仅基于外部传入的 `git show -1 --patch` 文本进行安全、代码质量、架构与工程约束审计。Use when asked to review patch/diff changes for high-risk issues, especially security vulnerabilities, permission bypass, sensitive data exposure, serious reliability risks, or architecture constraint violations. Do not use for full-repo scan, style suggestions, or speculative findings.
 ---
 
 # AI Review
 
-仅分析外部传入的 diff 内容。
-不要执行 `git` 命令。
+仅分析 diff 内容。
 不要扫描仓库。
 不要基于猜测推断未在 diff 中出现的内容。
 

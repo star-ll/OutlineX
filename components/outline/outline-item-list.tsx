@@ -1,6 +1,5 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
-  FlatList,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
 import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
+import type { FlatList as GestureHandlerFlatList } from "react-native-gesture-handler";
 
 import { OUTLINE_KEYBOARD_TOOLBAR_HEIGHT } from "@/components/outline/constants";
 import OutlineItem from "@/components/outline/outline-item";
@@ -99,7 +99,7 @@ function OutlineItemList({
     (state) => state.moveItemWithinParent,
   );
   const activeId = useOutlineStore((state) => state.activeId);
-  const listRef = useRef<FlatList<string>>(null);
+  const listRef = useRef<GestureHandlerFlatList<string> | null>(null);
   const listViewportRef = useRef<View>(null);
   const scrollOffsetRef = useRef(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);

@@ -22,6 +22,9 @@ export default function IndexScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+  const createButtonBackgroundColor =
+    colorScheme === "dark" ? "#ECEDEE" : colors.tint;
+  const createButtonTextColor = colorScheme === "dark" ? "#151718" : "#FFFFFF";
   const books = useBookStore((state) => state.books);
   const hydrate = useBookStore((state) => state.hydrate);
   const refreshBooks = useBookStore((state) => state.refreshBooks);
@@ -61,9 +64,16 @@ export default function IndexScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={handleCreateBook}
-          style={[styles.createButton, { backgroundColor: colors.tint }]}
+          style={[
+            styles.createButton,
+            { backgroundColor: createButtonBackgroundColor },
+          ]}
         >
-          <ThemedText style={styles.createButtonText}>新建</ThemedText>
+          <ThemedText
+            style={[styles.createButtonText, { color: createButtonTextColor }]}
+          >
+            新建
+          </ThemedText>
         </Pressable>
       </View>
 
@@ -135,7 +145,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   createButtonText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
   },

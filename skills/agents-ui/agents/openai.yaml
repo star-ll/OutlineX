@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agents UI"
+  short_description: "Design and implement consistent frontend UX."
+  default_prompt: "Use $agents-ui to design and implement coherent frontend UI and interactions under existing architecture constraints."

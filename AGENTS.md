@@ -52,6 +52,14 @@ Adding a new third-party dependency is allowed ONLY if at least one of the follo
 
 Any new dependency MUST be explicitly confirmed by the user/owner before merging.
 
+# Agents
+
+system includes:
+
+- agents-ui: skills/agents-ui
+
+First, you should check out a new branch. Branch name is `agents/<skill>/<short-task-name>`
+
 # Commands
 
 Package manager: npm

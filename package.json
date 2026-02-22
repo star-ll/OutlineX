@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start --dev-client",
     "reset-project": "node ./scripts/reset-project.js",
+    "prepare": "husky",
     "prebuild": "expo prebuild",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -45,9 +46,11 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@openai/codex": "^0.104.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "husky": "^9.1.7",
     "typescript": "~5.9.2"
   },
   "private": true

@@ -42,6 +42,16 @@ After any code generation, summarize changes + testing steps in a short bullet l
 
 Document-first and Test-first rules for specific directories are defined in module-level `AGENTS.override.md` files.
 
+### Add dependency rules
+
+Adding a new third-party dependency is allowed ONLY if at least one of the following is true:
+
+- It improves environment/runtime compatibility (explain which environments and why).
+- It significantly reduces implementation complexity or risk compared to writing/maintaining our own code.
+- We need a coherent utility set from the same library (not a single small helper function).
+
+Any new dependency MUST be explicitly confirmed by the user/owner before merging.
+
 # Commands
 
 Package manager: npm

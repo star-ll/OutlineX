@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Review"
+  short_description: "Strict diff-only security and quality audit."
+  default_prompt: "请基于外部传入的 git diff HEAD 内容进行严格审计，只输出明确可证实的问题。"

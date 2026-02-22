@@ -56,16 +56,19 @@ Any new dependency MUST be explicitly confirmed by the user/owner before merging
 
 Agent Routing Rules:
 
-If the user explicitly specifies one or more agents,
-you must automatically activate and use the corresponding skills defined in the agents configuration, and keep these rules.
+You MUST automatically select an agent based on the user's request.
+Agents MUST be evaluated from top to bottom.
+Select the first matching agent and stop.
 
-- dev: allow change any layer.
+you must automatically activate and use the corresponding skills defined below, and keep these rules.
+
 - test: ONLY change `/test/**`
 - ui: auto use skills/agents-ui. ONLY change UI layer and State layer
 - product: ONLY read UI, State and Feature layer, but forbidden to change
-- default: when no agent is explicitly specified, behave as developer
+- dev: allow change any layer
+- default: behave as dev
 
-YOU MUST first tell me your agent. Then, you MUST create and switch to a new branch before making any changes. Branch name is `agents/<agent name, like ui or dev>/<short-task-name>`
+YOU MUST first tell me your agent. Then, if you need change files, you MUST create and switch to a new branch before making any changes. Branch name is `agents/<agent name>/<short-task-name>`
 
 # Commands
 

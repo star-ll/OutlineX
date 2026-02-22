@@ -6,6 +6,8 @@
     "start": "expo start --dev-client",
     "reset-project": "node ./scripts/reset-project.js",
     "prepare": "husky",
+    "test": "npm run check:constraints",
+    "check:constraints": "node ./scripts/check-doc-sync.mjs && node ./scripts/check-test-sync.mjs",
     "prebuild": "expo prebuild",
     "android": "expo run:android",
     "ios": "expo run:ios",

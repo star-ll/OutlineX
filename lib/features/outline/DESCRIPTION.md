@@ -31,6 +31,7 @@
   - Uses `lib/scheduler` to enqueue storage persistence tasks.
   - Task ids use `storage-` prefix and are deduped by `bookId` with latest-task wins.
   - Immediate mode schedules as `Priority.Sync`; otherwise delayed `Priority.Default`.
+  - Persists are serialized per `bookId`, and pending payloads are coalesced to the latest snapshot before each write.
 - Errors:
   - Internal errors are caught and logged.
 
@@ -38,4 +39,5 @@
 
 - 2026-02-15: Added architecture-compliant persistence scheduler API and module documentation.
 - 2026-02-16: Switched outline persistence scheduling from debounce timer to scheduler-layer queue with dedupe and priority support.
+- 2026-02-23: Added per-book serial persistence queue and latest-snapshot coalescing to avoid concurrent DB write races.
 - Breaking changes: none.

@@ -27,8 +27,24 @@
 - Errors:
   - No explicit thrown errors from heap operations.
 
+### `AsyncSerialQueue`
+- Exports: `AsyncSerialQueue`, `AsyncQueueTask`
+- Constructor:
+  - `new AsyncSerialQueue()`
+- Methods:
+  - `enqueue<T>(task: AsyncQueueTask<T>): Promise<T>`
+- Properties:
+  - `size: number`
+  - `isRunning: boolean`
+- Behavior:
+  - Executes queued async/sync tasks in strict FIFO order.
+  - Each task starts only after the previous task settles.
+- Errors:
+  - Task rejection/throw is propagated to the `enqueue` returned promise.
+
 ## Changes (date + summary + breaking changes if any)
 
 - 2026-02-15: Added initial algorithms module description for debounce utility.
 - 2026-02-16: Added `MinHeap` API documentation for scheduler task ordering support.
+- 2026-02-23: Added `AsyncSerialQueue` for serial task execution in cross-layer write pipelines.
 - Breaking changes: none.

@@ -1,5 +1,6 @@
 import { Priority, Scheduler } from "@/lib/scheduler";
 import { getStorageSchedulerId } from "@/lib/scheduler/task-id";
+import { AsyncSerialQueue } from "@/lib/algorithms/async-serial-queue";
 import {
   clearRowsByBook,
   insertBookRowIfNotExists,
@@ -21,6 +22,9 @@ type PersistPayload = {
 export function createOutlinePersistenceScheduler(waitMs = 250) {
   const scheduler = new Scheduler();
   const scheduledTaskIds = new Set<ReturnType<typeof getStorageSchedulerId>>();
+  const pendingPayloadByBook = new Map<string, PersistPayload>();
+  const persistQueueByBook = new Map<string, AsyncSerialQueue>();
+  const drainingBookIds = new Set<string>();
 
   const persist = async ({ bookId, maps }: PersistPayload) => {
     try {
@@ -30,17 +34,54 @@ export function createOutlinePersistenceScheduler(waitMs = 250) {
     }
   };
 
+  const getPersistQueue = (bookId: string) => {
+    let queue = persistQueueByBook.get(bookId);
+    if (!queue) {
+      queue = new AsyncSerialQueue();
+      persistQueueByBook.set(bookId, queue);
+    }
+    return queue;
+  };
+
+  const drainBookPersist = (bookId: string) => {
+    if (drainingBookIds.has(bookId)) {
+      return;
+    }
+
+    drainingBookIds.add(bookId);
+    void getPersistQueue(bookId)
+      .enqueue(async () => {
+        while (true) {
+          const latestPayload = pendingPayloadByBook.get(bookId);
+          if (!latestPayload) {
+            break;
+          }
+          pendingPayloadByBook.delete(bookId);
+          await persist(latestPayload);
+        }
+      })
+      .finally(() => {
+        drainingBookIds.delete(bookId);
+        if (pendingPayloadByBook.has(bookId)) {
+          drainBookPersist(bookId);
+          return;
+        }
+        persistQueueByBook.delete(bookId);
+      });
+  };
+
   return {
     schedule(payload: PersistPayload, immediate = false) {
       const taskId = getStorageSchedulerId(`outline-persist-${payload.bookId}`);
       scheduledTaskIds.add(taskId);
+      pendingPayloadByBook.set(payload.bookId, payload);
 
       scheduler.push({
         id: taskId,
         priority: immediate ? Priority.Sync : Priority.Default,
         delayMs: immediate ? 0 : waitMs,
-        callback: async () => {
-          await persist(payload);
+        callback: () => {
+          drainBookPersist(payload.bookId);
           scheduledTaskIds.delete(taskId);
         },
       });
@@ -50,6 +91,7 @@ export function createOutlinePersistenceScheduler(waitMs = 250) {
         scheduler.cancel(taskId);
       }
       scheduledTaskIds.clear();
+      pendingPayloadByBook.clear();
     },
   };
 }

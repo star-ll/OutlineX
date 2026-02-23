@@ -22,6 +22,17 @@
         "code_quality_score": 1000,
         "architecture_score": 1000,
         "total_score": 3000
+      },
+      {
+        "agent": "dev",
+        "version": "v1",
+        "branch": "agents/dev/v1/persist-serial-queue",
+        "commit_id": "8076d47f290a35cd86dbc27cc5e657f13aafd1e5",
+        "collected_at": "2026-02-23T06:48:44.847Z",
+        "security_score": 1000,
+        "code_quality_score": 1000,
+        "architecture_score": 1000,
+        "total_score": 3000
       }
     ]
   },

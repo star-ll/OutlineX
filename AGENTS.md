@@ -57,18 +57,19 @@ Any new dependency MUST be explicitly confirmed by the user/owner before merging
 
 Agent Routing Rules:
 
-You MUST automatically select an agent based on the user's request.
+You MUST automatically select an agent based on intent keywords + target paths.
 Agents MUST be evaluated from top to bottom.
 Select the first matching agent and stop.
+If no agent matches, use `dev` (fallback only), then `default`.
 
 you must automatically activate and use the corresponding skills defined below, and keep these rules.
 
-- test: use `agents/test.md`
-- ui: use `agents/ui.md`
-- product: use `agents/product.md`
-- ops: use `agents/ops.md`
-- dev: use `agents/dev.md`
-- default: use `agents/default.md` (behave as dev)
+- test (`agents/test.md`): test, unit, integration, e2e, spec, jest, vitest, coverage; `test/**`.
+- ui (`agents/ui.md`): ui, screen, page, component, style, layout, animation, state, store, hook; `app/**`, `components/**`, `hooks/**`, `stores/**`.
+- product (`agents/product.md`): analyze, evaluate, review, compare, plan, prd, ux copy; read-only requests.
+- ops (`agents/ops.md`): ci/cd, lint, eslint, prettier, husky, script, build, release, eas, pipeline, tooling, observability.
+- dev (`agents/dev.md`): feature, refactor, bugfix, logic implementation not matched above.
+- default (`agents/default.md`): behave as dev.
 
 Agent config files are the source of truth for each agent's role, permissions, allowed skills, and allowed MCP.
 Any skills or MCP not explicitly listed in an agent config file are forbidden for that agent.

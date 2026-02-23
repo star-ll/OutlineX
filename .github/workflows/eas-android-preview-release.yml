@@ -1,0 +1,101 @@
+name: Android Preview APK Release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          expo-cache: true
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android preview APK with EAS
+        id: eas_build
+        run: |
+          set -euo pipefail
+          BUILD_JSON="$(eas build -p android --profile preview --non-interactive --wait --json)"
+          echo "$BUILD_JSON" > eas-build.json
+
+          ARTIFACT_URL="$(
+            node -e '
+              const fs = require("fs");
+              const raw = fs.readFileSync("eas-build.json", "utf8");
+              const parsed = JSON.parse(raw);
+              const build = Array.isArray(parsed) ? parsed[0] : parsed;
+              const url = build?.artifacts?.buildUrl || build?.artifactUrl;
+              if (!url) {
+                console.error("Cannot find APK artifact URL in EAS build output.");
+                process.exit(1);
+              }
+              process.stdout.write(url);
+            '
+          )"
+
+          BUILD_DETAILS_URL="$(
+            node -e '
+              const fs = require("fs");
+              const raw = fs.readFileSync("eas-build.json", "utf8");
+              const parsed = JSON.parse(raw);
+              const build = Array.isArray(parsed) ? parsed[0] : parsed;
+              const url = build?.buildDetailsPageUrl || build?.logsUrl || "";
+              process.stdout.write(url);
+            '
+          )"
+
+          curl -fL "$ARTIFACT_URL" -o app-preview.apk
+          echo "apk_path=app-preview.apk" >> "$GITHUB_OUTPUT"
+          echo "build_url=$BUILD_DETAILS_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Compute release metadata
+        id: release_meta
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG_NAME="${{ github.ref_name }}"
+          else
+            TAG_NAME="preview-apk-${{ github.run_number }}-${{ github.sha }}"
+          fi
+
+          RELEASE_NAME="Android Preview APK ${GITHUB_SHA::7}"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag_name }}
+          name: ${{ steps.release_meta.outputs.release_name }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            Automated Android preview APK built with:
+            `eas build -p android --profile preview`
+
+            EAS build details: ${{ steps.eas_build.outputs.build_url }}
+          files: ${{ steps.eas_build.outputs.apk_path }}

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
 const MAX_SCORE = 1000;
 const MAX_RETRIES = 3;
@@ -13,11 +13,11 @@ const WEIGHTS = {
 };
 
 function readStdin() {
-  return readFileSync(0, 'utf8').trim();
+  return readFileSync(0, "utf8").trim();
 }
 
 function runGit(args) {
-  return execFileSync('git', args, { encoding: 'utf8' }).trim();
+  return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
 function extractJsonObject(text) {
@@ -29,12 +29,12 @@ function extractJsonObject(text) {
     if (codeFenceMatch) {
       return JSON.parse(codeFenceMatch[1]);
     }
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
     if (start >= 0 && end > start) {
       return JSON.parse(trimmed.slice(start, end + 1));
     }
-    throw new Error('No JSON object found in codex output.');
+    throw new Error("No JSON object found in codex output.");
   }
 }
 
@@ -45,9 +45,9 @@ function assertCount(value, fieldName) {
 }
 
 function validateQuantizedResult(result) {
-  const categories = ['security', 'code_quality', 'architecture'];
+  const categories = ["security", "code_quality", "architecture"];
   for (const category of categories) {
-    if (!result || typeof result !== 'object' || !result[category]) {
+    if (!result || typeof result !== "object" || !result[category]) {
       throw new Error(`Missing category: ${category}`);
     }
     const mustFix = result[category].must_fix;
@@ -58,11 +58,21 @@ function validateQuantizedResult(result) {
 }
 
 function scoreCategory(counts, weights) {
-  const rawScore = MAX_SCORE - counts.must_fix * weights.must_fix - counts.should_fix * weights.should_fix;
+  const rawScore =
+    MAX_SCORE -
+    counts.must_fix * weights.must_fix -
+    counts.should_fix * weights.should_fix;
   return Math.max(0, rawScore);
 }
 
-function buildPrompt({ reviewOutput, agent, version, branch, commitId, retryHint }) {
+function buildPrompt({
+  reviewOutput,
+  agent,
+  version,
+  branch,
+  commitId,
+  retryHint,
+}) {
   return `
 你需要把下面的审计结果量化成 JSON。只能输出 JSON 对象，不能输出任何解释、注释、markdown。
 
@@ -92,42 +102,42 @@ ${retryHint}
 }
 
 function quantizeWithRetry(context) {
-  let retryHint = '';
+  let retryHint = "";
   let lastError = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
     try {
       const prompt = buildPrompt({ ...context, retryHint });
-      const output = execFileSync('npx', ['codex', 'exec', '-'], {
+      const output = execFileSync("npx", ["codex", "exec", "-"], {
         input: prompt,
-        encoding: 'utf8',
+        encoding: "utf8",
         maxBuffer: 10 * 1024 * 1024,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const parsed = extractJsonObject(output);
       validateQuantizedResult(parsed);
       return parsed;
     } catch (error) {
       lastError = error;
-      retryHint = '请重新生成json';
+      retryHint = "请重新生成json";
     }
   }
 
-  throw lastError ?? new Error('Failed to get a valid JSON result from codex.');
+  throw lastError ?? new Error("Failed to get a valid JSON result from codex.");
 }
 
 function ensureObject(value, filePath) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`Invalid JSON root in ${filePath}: expected object.`);
   }
 }
 
 function appendScoreRecord({ repoRoot, agent, version, record }) {
-  const scoreFilePath = path.join(repoRoot, 'agent-score.json');
+  const scoreFilePath = path.join(repoRoot, "agent-score.json");
   let root = {};
 
   if (existsSync(scoreFilePath)) {
-    const raw = readFileSync(scoreFilePath, 'utf8').trim();
+    const raw = readFileSync(scoreFilePath, "utf8").trim();
     if (raw.length > 0) {
       root = JSON.parse(raw);
       ensureObject(root, scoreFilePath);
@@ -141,34 +151,50 @@ function appendScoreRecord({ repoRoot, agent, version, record }) {
     root[agent][version] = [];
   }
   if (!Array.isArray(root[agent][version])) {
-    throw new Error(`Invalid path in agent-score.json: ${agent}.${version} must be an array.`);
+    throw new Error(
+      `Invalid path in agent-score.json: ${agent}.${version} must be an array.`,
+    );
   }
 
   root[agent][version].push(record);
-  writeFileSync(scoreFilePath, `${JSON.stringify(root, null, 2)}\n`, 'utf8');
+  writeFileSync(scoreFilePath, `${JSON.stringify(root, null, 2)}\n`, "utf8");
 }
 
 function main() {
   const reviewOutput = readStdin();
   if (!reviewOutput) {
-    throw new Error('No review output received from stdin.');
+    throw new Error("No review output received from stdin.");
   }
 
-  const repoRoot = runGit(['rev-parse', '--show-toplevel']);
-  const branch = runGit(['branch', '--show-current']);
-  const commitId = runGit(['rev-parse', 'HEAD']);
+  const repoRoot = runGit(["rev-parse", "--show-toplevel"]);
+  const branch = runGit(["branch", "--show-current"]);
+  const commitId = runGit(["rev-parse", "HEAD"]);
   const branchMatch = branch.match(/^agents\/([^/]+)\/([^/]+)\/.+$/);
   if (!branchMatch) {
-    throw new Error(`Current branch "${branch}" does not match agents/<agent>/<version>/<task>.`);
+    // throw new Error(`Current branch "${branch}" does not match agents/<agent>/<version>/<task>.`);
+    process.stderr.write(`[Agent Collection]: 非agents规范分支，跳过采集\n`);
+    return;
   }
 
   const agent = branchMatch[1];
   const version = branchMatch[2];
-  const quantized = quantizeWithRetry({ reviewOutput, agent, version, branch, commitId });
+  const quantized = quantizeWithRetry({
+    reviewOutput,
+    agent,
+    version,
+    branch,
+    commitId,
+  });
 
   const securityScore = scoreCategory(quantized.security, WEIGHTS.security);
-  const codeQualityScore = scoreCategory(quantized.code_quality, WEIGHTS.code_quality);
-  const architectureScore = scoreCategory(quantized.architecture, WEIGHTS.architecture);
+  const codeQualityScore = scoreCategory(
+    quantized.code_quality,
+    WEIGHTS.code_quality,
+  );
+  const architectureScore = scoreCategory(
+    quantized.architecture,
+    WEIGHTS.architecture,
+  );
   const totalScore = securityScore + codeQualityScore + architectureScore;
 
   const record = {
@@ -184,7 +210,7 @@ function main() {
   };
 
   appendScoreRecord({ repoRoot, agent, version, record });
-  process.stdout.write('[Agent Collection]: Agent 本次数据采集完毕\n');
+  process.stdout.write("[Agent Collection]: Agent 本次数据采集完毕\n");
 }
 
 try {

@@ -2,5 +2,38 @@
 set -e
 
 npm run lint
-cat ./skills/ai-review/SKILL.md | npx codex exec - | node ./scripts/post-commit-agent-score.mjs
-git add agent-score.json
+
+if git diff --cached --quiet; then
+  echo "[AI Review]: No staged changes, skip."
+  exit 0
+fi
+
+review_files="$(
+  git diff --cached --name-only \
+    | grep -E '^(app|components|constants|stores|utils|hooks|lib|utils|scripts|test)/.*\.(ts|tsx|js|jsx|mjs|cjs|json)$' \
+    || true
+)"
+
+if [ -z "$review_files" ]; then
+  echo "[AI Review]: No staged source files in review scope, skip."
+  exit 0
+fi
+
+filtered_diff="$(git diff --cached -- $review_files)"
+diff_size="$(printf '%s' "$filtered_diff" | wc -c | tr -d ' ')"
+
+if [ "$diff_size" -gt 20480 ]; then
+  echo "[AI Review]: Filtered staged diff is ${diff_size} bytes, exceeds 20KB limit, skip."
+  exit 0
+fi
+
+review_prompt="$(cat ./skills/ai-review/SKILL.md)
+
+diff:
+$filtered_diff"
+
+printf '%s' "$review_prompt" | npx codex exec - | node ./scripts/post-commit-agent-score.mjs
+
+if [ -f agent-score.json ]; then
+  git add agent-score.json
+fi

@@ -24,5 +24,20 @@
         "total_score": 3000
       }
     ]
+  },
+  "ui": {
+    "v1": [
+      {
+        "agent": "ui",
+        "version": "v1",
+        "branch": "agents/ui/v1/outline-loading-skeleton",
+        "commit_id": "3b33ab21bb3cdbd59f75dc15125bd967e45364c9",
+        "collected_at": "2026-02-23T05:50:58.192Z",
+        "security_score": 1000,
+        "code_quality_score": 1000,
+        "architecture_score": 1000,
+        "total_score": 3000
+      }
+    ]
   }
 }

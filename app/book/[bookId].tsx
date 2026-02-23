@@ -10,6 +10,7 @@ import {
 
 import OutlineItemList from "@/components/outline/outline-item-list";
 import OutlineKeyboardToolbar from "@/components/outline/outline-keyboard-toolbar";
+import OutlineLoadingSkeleton from "@/components/outline/outline-loading-skeleton";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -43,12 +44,25 @@ export default function OutlineScreen() {
     books.find((book) => book.id === bookId)?.title ?? "未命名笔记";
   const [titleText, setTitleText] = useState(currentBookTitle);
   const [isOutlineInputFocused, setIsOutlineInputFocused] = useState(false);
+  const [isOutlineLoading, setIsOutlineLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     if (!bookId) {
+      setIsOutlineLoading(false);
       return;
     }
-    void loadBook(bookId);
+    setIsOutlineLoading(true);
+    setIsOutlineInputFocused(false);
+    void loadBook(bookId).finally(() => {
+      if (cancelled) {
+        return;
+      }
+      setIsOutlineLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [bookId, loadBook]);
 
   useEffect(() => {
@@ -123,34 +137,40 @@ export default function OutlineScreen() {
         style={styles.content}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.header}>
-          <TextInput
-            value={titleText}
-            onChangeText={setTitleText}
-            onFocus={() => setIsOutlineInputFocused(false)}
-            onBlur={() => void handleSaveTitle()}
-            onSubmitEditing={() => void handleSaveTitle()}
-            placeholder="未命名笔记"
-            placeholderTextColor={colors.icon}
-            selectionColor={colors.tint}
-            style={[
-              styles.title,
-              { fontFamily: Fonts.rounded, color: colors.text },
-            ]}
-          />
-        </View>
+        {isOutlineLoading ? (
+          <OutlineLoadingSkeleton iconColor={colors.icon} />
+        ) : (
+          <>
+            <View style={styles.header}>
+              <TextInput
+                value={titleText}
+                onChangeText={setTitleText}
+                onFocus={() => setIsOutlineInputFocused(false)}
+                onBlur={() => void handleSaveTitle()}
+                onSubmitEditing={() => void handleSaveTitle()}
+                placeholder="未命名笔记"
+                placeholderTextColor={colors.icon}
+                selectionColor={colors.tint}
+                style={[
+                  styles.title,
+                  { fontFamily: Fonts.rounded, color: colors.text },
+                ]}
+              />
+            </View>
 
-        <OutlineItemList
-          items={items}
-          indentSize={INDENT_SIZE}
-          colors={colors}
-          inputRefs={inputRefs}
-          onInputFocusChange={setIsOutlineInputFocused}
-          onEmptyPress={handleEmptyOutlinePress}
-        />
+            <OutlineItemList
+              items={items}
+              indentSize={INDENT_SIZE}
+              colors={colors}
+              inputRefs={inputRefs}
+              onInputFocusChange={setIsOutlineInputFocused}
+              onEmptyPress={handleEmptyOutlinePress}
+            />
+          </>
+        )}
       </KeyboardAvoidingView>
       <OutlineKeyboardToolbar
-        visible={isOutlineInputFocused}
+        visible={!isOutlineLoading && isOutlineInputFocused}
         onAdd={handleToolbarAdd}
         onIndent={handleToolbarIndent}
         onOutdent={handleToolbarOutdent}

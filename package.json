@@ -14,7 +14,8 @@
     "web": "expo start --web",
     "android:device": "expo run:android --device",
     "ios:device": "expo run:ios --device",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "agent-list": "node ./scripts/agent-list.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

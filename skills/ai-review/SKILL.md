@@ -18,7 +18,7 @@ MUST_FIX: (none)
 
 ## Audit Rules
 
-仅报告证据充分的高风险问题：
+仅报告证据充分的中级和高级风险问题：
 
 1. **Security**
    - XSS / CSRF / SSRF / 注入 / 路径遍历 / 反序列化
@@ -42,9 +42,9 @@ MUST_FIX: (none)
 
 - 不输出风格问题
 - 不输出低价值建议
-- 仅保留高风险项
-- 按风险排序（High → Low）
+- 仅保留中级和高级风险项
 - 最多 10 条
+- 按风险排序（High → Low），高风险放到MUST_FIX中，中风险放到SHOULD_FIX
 
 ## Output Format
 

@@ -9,4 +9,6 @@ if [ ! -f "$verify_flag" ]; then
 fi
 
 rm -f "$verify_flag"
-cat ./skills/ai-review/SKILL.md | npx codex exec -
+review_output="$(cat ./skills/ai-review/SKILL.md | npx codex exec -)"
+printf "%s\n" "$review_output"
+printf "%s" "$review_output" | node ./scripts/post-commit-agent-score.mjs

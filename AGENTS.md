@@ -62,13 +62,16 @@ Select the first matching agent and stop.
 
 you must automatically activate and use the corresponding skills defined below, and keep these rules.
 
-- test: ONLY change `/test/**`
-- ui: auto use skills/agents-ui. ONLY change UI layer and State layer
-- product: ONLY read UI, State and Feature layer, but forbidden to change
-- dev: allow change any layer
-- default: behave as dev
+- test: use `agents/test.md`
+- ui: use `agents/ui.md`
+- product: use `agents/product.md`
+- dev: use `agents/dev.md`
+- default: use `agents/default.md` (behave as dev)
 
-YOU MUST first tell me your agent. Then, if you need change files, you MUST create and switch to a new branch before making any changes. Branch name is `agents/<agent name>/<short-task-name>`
+Agent config files are the source of truth for each agent's role, permissions, allowed skills, and allowed MCP.
+Any skills or MCP not explicitly listed in an agent config file are forbidden for that agent.
+
+YOU MUST first tell me your agent. Then, if you need change files, you MUST create and switch to a new branch before making any changes. Branch name is `agents/<agent name>/<agent version>/<short-task-name>`
 
 # Commands
 

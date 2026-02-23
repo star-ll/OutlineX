@@ -1,14 +1,6 @@
 #!/bin/sh
 set -e
 
-git_dir="$(git rev-parse --git-dir)"
-verify_flag="$git_dir/.codex-verified-$PPID"
-
-if [ ! -f "$verify_flag" ]; then
-  exit 0
-fi
-
-rm -f "$verify_flag"
 review_output="$(cat ./skills/ai-review/SKILL.md | npx codex exec -)"
 printf "%s\n" "$review_output"
 printf "%s" "$review_output" | node ./scripts/post-commit-agent-score.mjs

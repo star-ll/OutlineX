@@ -39,5 +39,20 @@
         "total_score": 3000
       }
     ]
+  },
+  "ops": {
+    "v1": [
+      {
+        "agent": "ops",
+        "version": "v1",
+        "branch": "agents/ops/v1/silent-codex-exec",
+        "commit_id": "b89263aa750865a341e8cdb231276beace63d665",
+        "collected_at": "2026-02-23T06:01:08.354Z",
+        "security_score": 1000,
+        "code_quality_score": 1000,
+        "architecture_score": 1000,
+        "total_score": 3000
+      }
+    ]
   }
 }

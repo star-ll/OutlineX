@@ -102,6 +102,7 @@ function quantizeWithRetry(context) {
         input: prompt,
         encoding: 'utf8',
         maxBuffer: 10 * 1024 * 1024,
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       const parsed = extractJsonObject(output);
       validateQuantizedResult(parsed);

@@ -175,6 +175,7 @@ function main() {
     version,
     branch,
     commit_id: commitId,
+    collected_at: new Date().toISOString(),
     security_score: securityScore,
     code_quality_score: codeQualityScore,
     architecture_score: architectureScore,
@@ -182,12 +183,12 @@ function main() {
   };
 
   appendScoreRecord({ repoRoot, agent, version, record });
-  process.stdout.write(`${JSON.stringify(record)}\n`);
+  process.stdout.write('[Agent Collection]: Agent 本次数据采集完毕\n');
 }
 
 try {
   main();
 } catch (error) {
-  process.stderr.write(`[agent-score] ${error.message}\n`);
+  process.stderr.write(`[Agent Collection]: ${error.message}\n`);
   process.exit(1);
 }

@@ -1,6 +1,0 @@
-#!/bin/sh
-set -e
-
-review_output="$(cat ./skills/ai-review/SKILL.md | npx codex exec -)"
-printf "%s\n" "$review_output"
-printf "%s" "$review_output" | node ./scripts/post-commit-agent-score.mjs

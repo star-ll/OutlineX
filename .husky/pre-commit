@@ -2,3 +2,5 @@
 set -e
 
 npm run lint
+cat ./skills/ai-review/SKILL.md | npx codex exec - | node ./scripts/post-commit-agent-score.mjs
+git add agent-score.json

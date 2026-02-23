@@ -1,0 +1,17 @@
+{
+  "dev": {
+    "v1": [
+      {
+        "agent": "dev",
+        "version": "v1",
+        "branch": "agents/dev/v1/post-commit-agent-score",
+        "commit_id": "135b93eb269ed44b0c5a50a8c299254c6e9b7107",
+        "collected_at": "2026-02-23T03:49:12.530Z",
+        "security_score": 1000,
+        "code_quality_score": 1000,
+        "architecture_score": 1000,
+        "total_score": 3000
+      }
+    ]
+  }
+}

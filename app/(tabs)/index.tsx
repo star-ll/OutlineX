@@ -68,7 +68,7 @@ export default function IndexScreen() {
       <View style={styles.headerRow}>
         <View>
           <ThemedText style={[styles.kicker, { color: colors.icon }]}>
-            大纲笔记
+            OutlineX
           </ThemedText>
           {/* <ThemedText style={[styles.title, { color: colors.text }]}>我的文档</ThemedText> */}
         </View>
@@ -92,7 +92,9 @@ export default function IndexScreen() {
 
       <ScrollView contentContainerStyle={styles.listContent}>
         {showInitialLoading ? (
-          <View style={[styles.loadingCard, { borderColor: `${colors.icon}22` }]}>
+          <View
+            style={[styles.loadingCard, { borderColor: `${colors.icon}22` }]}
+          >
             <ActivityIndicator color={colors.tint} />
             <ThemedText style={[styles.loadingText, { color: colors.icon }]}>
               正在加载笔记...

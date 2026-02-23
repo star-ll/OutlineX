@@ -11,6 +11,17 @@
         "code_quality_score": 1000,
         "architecture_score": 1000,
         "total_score": 3000
+      },
+      {
+        "agent": "dev",
+        "version": "v1",
+        "branch": "agents/dev/v1/add-ops-agent-routing",
+        "commit_id": "1026e48386f5e782344c0ee4f0c56bee3b5dfc47",
+        "collected_at": "2026-02-23T03:59:26.868Z",
+        "security_score": 1000,
+        "code_quality_score": 1000,
+        "architecture_score": 1000,
+        "total_score": 3000
       }
     ]
   }

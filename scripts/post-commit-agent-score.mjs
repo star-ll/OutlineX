@@ -65,6 +65,10 @@ function scoreCategory(counts, weights) {
   return Math.max(0, rawScore);
 }
 
+function hasNoMustFix(reviewOutput) {
+  return /MUST_FIX:\s*\(none\)/i.test(reviewOutput);
+}
+
 function buildPrompt({
   reviewOutput,
   agent,
@@ -74,28 +78,29 @@ function buildPrompt({
   retryHint,
 }) {
   return `
-你需要把下面的审计结果量化成 JSON。只能输出 JSON 对象，不能输出任何解释、注释、markdown。
+You need to quantize the audit result below into JSON.
+Output a JSON object only, with no explanation, comments, or markdown.
 
-上下文信息：
+Context:
 - agent: ${agent}
 - version: ${version}
 - branch: ${branch}
 - commit_id: ${commitId}
 
-审计结果文本（MUST_FIX / SHOULD_FIX）：
+Audit result text (MUST_FIX / SHOULD_FIX):
 ${reviewOutput}
 
-任务：
-1. 按问题内容将每条问题分类到以下三类之一：security / code_quality / architecture。
-2. 分别统计三类中的 must_fix 和 should_fix 数量。
-3. 输出格式严格为：
+Task:
+1. Classify each issue into one category: security / code_quality / architecture.
+2. Count must_fix and should_fix for each category.
+3. Output must strictly follow:
 {
   "security": { "must_fix": number, "should_fix": number },
   "code_quality": { "must_fix": number, "should_fix": number },
   "architecture": { "must_fix": number, "should_fix": number }
 }
-4. 若文本是 MUST_FIX: (none)，则所有计数为 0。
-5. 所有数值必须是非负整数。
+4. If the text is MUST_FIX: (none), set all counts to 0.
+5. All values must be non-negative integers.
 
 ${retryHint}
 `.trim();
@@ -119,7 +124,7 @@ function quantizeWithRetry(context) {
       return parsed;
     } catch (error) {
       lastError = error;
-      retryHint = "请重新生成json";
+      retryHint = "Please regenerate valid JSON.";
     }
   }
 
@@ -172,19 +177,27 @@ function main() {
   const branchMatch = branch.match(/^agents\/([^/]+)\/([^/]+)\/.+$/);
   if (!branchMatch) {
     // throw new Error(`Current branch "${branch}" does not match agents/<agent>/<version>/<task>.`);
-    process.stderr.write(`[Agent Collection]: 非agents规范分支，跳过采集\n`);
+    process.stderr.write(
+      "[Agent Collection]: Non-agents branch. Skip collection.\n",
+    );
     return;
   }
 
   const agent = branchMatch[1];
   const version = branchMatch[2];
-  const quantized = quantizeWithRetry({
-    reviewOutput,
-    agent,
-    version,
-    branch,
-    commitId,
-  });
+  const quantized = hasNoMustFix(reviewOutput)
+    ? {
+        security: { must_fix: 0, should_fix: 0 },
+        code_quality: { must_fix: 0, should_fix: 0 },
+        architecture: { must_fix: 0, should_fix: 0 },
+      }
+    : quantizeWithRetry({
+        reviewOutput,
+        agent,
+        version,
+        branch,
+        commitId,
+      });
 
   const securityScore = scoreCategory(quantized.security, WEIGHTS.security);
   const codeQualityScore = scoreCategory(
@@ -210,7 +223,7 @@ function main() {
   };
 
   appendScoreRecord({ repoRoot, agent, version, record });
-  process.stdout.write("[Agent Collection]: Agent 本次数据采集完毕\n");
+  process.stdout.write("[Agent Collection]: Agent record collected.\n");
 }
 
 try {

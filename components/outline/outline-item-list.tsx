@@ -144,7 +144,10 @@ function OutlineItemList({
             keyboardHeight > 0
               ? keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT
               : 0;
-          const visibleBottom = Math.max(0, listViewportHeight - reservedBottom);
+          const visibleBottom = Math.max(
+            0,
+            listViewportHeight - reservedBottom,
+          );
           const margin = 12;
           const rowTop = y;
           const rowBottom = y + h;
@@ -160,7 +163,10 @@ function OutlineItemList({
           nextOffset = Math.max(0, nextOffset);
 
           if (Math.abs(nextOffset - scrollOffsetRef.current) > 1) {
-            listRef.current?.scrollToOffset({ offset: nextOffset, animated: true });
+            listRef.current?.scrollToOffset({
+              offset: nextOffset,
+              animated: true,
+            });
           }
         },
         () => {},
@@ -265,7 +271,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: 0,
   },
   emptyListPressArea: {
     flex: 1,

@@ -113,7 +113,11 @@ export default function OutlineItem({
             hitSlop={8}
           >
             {isDragging ? (
-              <IconSymbol size={16} color={colors.icon} name="line.3.horizontal" />
+              <IconSymbol
+                size={16}
+                color={colors.icon}
+                name="line.3.horizontal"
+              />
             ) : (
               <View style={[styles.bullet, { borderColor: colors.icon }]} />
             )}
@@ -183,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   disclosure: {
-    width: 40,
+    width: 20,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   dragHandle: {
-    width: 40,
+    width: 20,
     height: 40,
     alignItems: "center",
     justifyContent: "center",

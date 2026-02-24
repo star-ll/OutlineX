@@ -11,7 +11,7 @@
 - `components/ui/icon-symbol.ios.tsx`: iOS native SF Symbols implementation.
 - `components/ui/floating-action-button.tsx`: Reusable floating action button with configurable icon and colors.
 - `components/ui/swipe-action-row.tsx`: Reusable row wrapper that exposes a right-swipe action button.
-- `components/ui/app-toast.tsx`: Reusable temporary toast message with fade/slide animation.
+- `components/ui/app-toast.tsx`: Reusable white capsule toast message with fade/slide animation and dark-mode-aware defaults.
 - `components/outline/outline-loading-skeleton.tsx`: Skeleton placeholders for outline loading state.
 - `components/outline/outline-item.tsx`: Single outline item renderer with interaction support.
 - `components/outline/outline-item-list.tsx`: List renderer for outline items.

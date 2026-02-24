@@ -126,55 +126,55 @@ function OutlineItemList({
     };
   }, [isRootList]);
 
-  useEffect(() => {
-    if (!isRootList || !activeId || listViewportHeight === 0) {
-      return;
-    }
+  // useEffect(() => {
+  //   if (!isRootList || !activeId || listViewportHeight === 0) {
+  //     return;
+  //   }
 
-    const activeInput = inputRefs.current.get(activeId);
-    if (!activeInput) {
-      return;
-    }
+  //   const activeInput = inputRefs.current.get(activeId);
+  //   if (!activeInput) {
+  //     return;
+  //   }
 
-    const timer = setTimeout(() => {
-      activeInput.measureLayout(
-        listViewportRef.current as never,
-        (_x, y, _w, h) => {
-          const reservedBottom =
-            keyboardHeight > 0
-              ? keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT
-              : 0;
-          const visibleBottom = Math.max(
-            0,
-            listViewportHeight - reservedBottom,
-          );
-          const margin = 12;
-          const rowTop = y;
-          const rowBottom = y + h;
+  //   const timer = setTimeout(() => {
+  //     activeInput.measureLayout(
+  //       listViewportRef.current as never,
+  //       (_x, y, _w, h) => {
+  //         const reservedBottom =
+  //           keyboardHeight > 0
+  //             ? keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT
+  //             : 0;
+  //         const visibleBottom = Math.max(
+  //           0,
+  //           listViewportHeight - reservedBottom,
+  //         );
+  //         const margin = 12;
+  //         const rowTop = y;
+  //         const rowBottom = y + h;
 
-          let nextOffset = scrollOffsetRef.current;
+  //         let nextOffset = scrollOffsetRef.current;
 
-          if (rowBottom + margin > visibleBottom) {
-            nextOffset += rowBottom + margin - visibleBottom;
-          } else if (rowTop - margin < 0) {
-            nextOffset += rowTop - margin;
-          }
+  //         if (rowBottom + margin > visibleBottom) {
+  //           nextOffset += rowBottom + margin - visibleBottom;
+  //         } else if (rowTop - margin < 0) {
+  //           nextOffset += rowTop - margin;
+  //         }
 
-          nextOffset = Math.max(0, nextOffset);
+  //         nextOffset = Math.max(0, nextOffset);
 
-          if (Math.abs(nextOffset - scrollOffsetRef.current) > 1) {
-            listRef.current?.scrollToOffset({
-              offset: nextOffset,
-              animated: true,
-            });
-          }
-        },
-        () => {},
-      );
-    }, 30);
+  //         if (Math.abs(nextOffset - scrollOffsetRef.current) > 1) {
+  //           listRef.current?.scrollToOffset({
+  //             offset: nextOffset,
+  //             animated: true,
+  //           });
+  //         }
+  //       },
+  //       () => {},
+  //     );
+  //   }, 30);
 
-    return () => clearTimeout(timer);
-  }, [activeId, inputRefs, isRootList, keyboardHeight, listViewportHeight]);
+  //   return () => clearTimeout(timer);
+  // }, [activeId, inputRefs, isRootList, keyboardHeight, listViewportHeight]);
 
   const renderItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<string>) => {

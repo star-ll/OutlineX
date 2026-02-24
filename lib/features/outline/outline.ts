@@ -20,6 +20,9 @@ type PersistPayload = {
   maps: OutlineMaps;
 };
 
+const OUTLINE_ROOT_ID = "root";
+const getStorageRootNodeId = (bookId: string) => `__outline_root__${bookId}`;
+
 export function createOutlinePersistenceScheduler(waitMs = 250) {
   const scheduler = new Scheduler();
   const scheduledTaskIds = new Set<ReturnType<typeof getStorageSchedulerId>>();
@@ -102,9 +105,13 @@ export async function loadOutlineMaps(bookId: string): Promise<OutlineMaps> {
 
   const nodes = await listNodeRowsByBook(bookId);
   const edges = await listEdgeRowsByBook(bookId);
+  const storageRootId = getStorageRootNodeId(bookId);
 
   const dataMap: OutlineMaps["dataMap"] = {};
   for (const row of nodes) {
+    if (row.id === storageRootId) {
+      continue;
+    }
     dataMap[row.id] = { id: row.id, type: row.type, text: row.text };
   }
 
@@ -112,11 +119,13 @@ export async function loadOutlineMaps(bookId: string): Promise<OutlineMaps> {
   const parentMap: OutlineMaps["parentMap"] = {};
 
   for (const row of edges) {
-    if (!childrenMap[row.parentId]) {
-      childrenMap[row.parentId] = [];
+    const parentId =
+      row.parentId === storageRootId ? OUTLINE_ROOT_ID : row.parentId;
+    if (!childrenMap[parentId]) {
+      childrenMap[parentId] = [];
     }
-    childrenMap[row.parentId].push(row.childId);
-    parentMap[row.childId] = row.parentId;
+    childrenMap[parentId].push(row.childId);
+    parentMap[row.childId] = parentId;
   }
 
   return { dataMap, childrenMap, parentMap };
@@ -125,9 +134,17 @@ export async function loadOutlineMaps(bookId: string): Promise<OutlineMaps> {
 export async function saveOutlineMaps(bookId: string, maps: OutlineMaps) {
   await initOutlineFeature();
 
-  const nodes = Object.values(maps.dataMap);
+  const storageRootId = getStorageRootNodeId(bookId);
+  const nodes = [
+    { id: storageRootId, type: "text" as const, text: "" },
+    ...Object.values(maps.dataMap),
+  ];
   const edges = Object.entries(maps.childrenMap).flatMap(([parentId, children]) =>
-    children.map((childId, position) => ({ parentId, childId, position })),
+    children.map((childId, position) => ({
+      parentId: parentId === OUTLINE_ROOT_ID ? storageRootId : parentId,
+      childId,
+      position,
+    })),
   );
 
   await runInDbTransaction(async () => {

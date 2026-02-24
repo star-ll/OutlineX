@@ -47,6 +47,8 @@ type OutlineState = {
   loadBook: (bookId: string) => Promise<void>;
   setActiveId: (id: string | null) => void;
   toggleCollapse: (id: string) => void;
+  collapseAll: () => void;
+  expandAll: () => void;
   addItemAfter: (afterId?: string) => string;
   updateItemText: (id: string, text: string) => void;
   indentItem: (id: string) => void;
@@ -101,6 +103,21 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
     set((state) => ({
       collapsedIds: { ...state.collapsedIds, [id]: !state.collapsedIds[id] },
     })),
+  collapseAll: () =>
+    set((state) => {
+      const collapsedIds: Record<string, boolean> = {};
+      Object.entries(state.childrenMap).forEach(([id, children]) => {
+        if (id === state.rootId) {
+          return;
+        }
+        if (children.length > 0) {
+          collapsedIds[id] = true;
+        }
+      });
+
+      return { collapsedIds };
+    }),
+  expandAll: () => set({ collapsedIds: {} }),
   addItemAfter: (afterId?: string) => {
     const id = uuidV7();
     set((state) => {

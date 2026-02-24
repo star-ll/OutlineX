@@ -19,6 +19,8 @@ const MAPPING = {
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
   'list.bullet.indent': 'format-list-bulleted',
+  'line.3.horizontal': 'menu',
+  ellipsis: 'more-horiz',
   plus: 'add',
   'increase.indent': 'format-indent-increase',
   'decrease.indent': 'format-indent-decrease',

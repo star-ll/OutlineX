@@ -20,7 +20,6 @@ type OutlineItemProps = {
   onDragStart?: () => void;
   isDragging?: boolean;
   onInputFocusChange?: (focused: boolean) => void;
-  renderChildren?: (children: string[], nextDepth: number) => React.ReactNode;
 };
 
 let emptyChildren: string[] = [];
@@ -33,7 +32,6 @@ export default function OutlineItem({
   onDragStart,
   isDragging = false,
   onInputFocusChange,
-  renderChildren,
 }: OutlineItemProps) {
   const item: OutlineNode = useOutlineStore((state) => state.dataMap[itemId])!;
 
@@ -68,107 +66,104 @@ export default function OutlineItem({
   const hasChildren = !!children?.length;
 
   return (
-    <>
-      <View
-        style={[
-          styles.row,
-          { paddingLeft: 12 + depth * indentSize },
-          isActive && { backgroundColor: `${colors.tint}1A` },
-          isDragging && styles.draggingRow,
-        ]}
+    <View
+      style={[
+        styles.row,
+        { paddingLeft: 12 + depth * indentSize },
+        isActive && { backgroundColor: `${colors.tint}1A` },
+        isDragging && styles.draggingRow,
+      ]}
+    >
+      <Pressable
+        onPress={() => setActiveId(item.id)}
+        style={styles.rowPressArea}
       >
         <Pressable
-          onPress={() => setActiveId(item.id)}
-          style={styles.rowPressArea}
+          accessibilityRole="button"
+          accessibilityLabel={collapsed ? "展开子节点" : "折叠子节点"}
+          onPress={() => (hasChildren ? toggleCollapse(item.id) : null)}
+          style={styles.disclosure}
+          hitSlop={8}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={collapsed ? "展开子节点" : "折叠子节点"}
-            onPress={() => (hasChildren ? toggleCollapse(item.id) : null)}
-            style={styles.disclosure}
-            hitSlop={8}
-          >
-            {hasChildren ? (
-              <IconSymbol
-                size={18}
-                color={colors.icon}
-                name="chevron.right"
-                style={{
-                  transform: [{ rotate: collapsed ? "0deg" : "90deg" }],
-                }}
-              />
-            ) : (
-              <View style={styles.disclosureSpacer} />
-            )}
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="拖拽排序"
-            onLongPress={() => {
-              setActiveId(item.id);
-              onDragStart?.();
-            }}
-            delayLongPress={240}
-            style={styles.dragHandle}
-            hitSlop={8}
-          >
-            {isDragging ? (
-              <IconSymbol
-                size={16}
-                color={colors.icon}
-                name="line.3.horizontal"
-              />
-            ) : (
-              <View style={[styles.bullet, { borderColor: colors.icon }]} />
-            )}
-          </Pressable>
-          <TextInput
-            ref={(ref) => {
-              if (ref) {
-                inputRefs.current.set(item.id, ref);
-              } else {
-                inputRefs.current.delete(item.id);
-              }
-            }}
-            value={item.text}
-            onChangeText={(text) => updateItemText(item.id, text)}
-            onFocus={() => {
-              setActiveId(item.id);
-              onInputFocusChange?.(true);
-            }}
-            onBlur={() => {
-              onInputFocusChange?.(false);
-            }}
-            onSubmitEditing={() => addItemAfter(item.id)}
-            returnKeyType="next"
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                fontFamily: Fonts.sans,
-              },
-            ]}
-            placeholder="输入内容..."
-            placeholderTextColor={colors.icon}
-            blurOnSubmit={false}
-            onKeyPress={(event) => {
-              const { key } = event.nativeEvent;
-              if (key === "Tab") {
-                if ((event.nativeEvent as { shiftKey?: boolean }).shiftKey) {
-                  outdentItem(item.id);
-                } else {
-                  indentItem(item.id);
-                }
-              }
-              if (key === "Backspace" && item.text.length === 0) {
-                removeItem(item.id);
-              }
-            }}
-          />
+          {hasChildren ? (
+            <IconSymbol
+              size={18}
+              color={colors.icon}
+              name="chevron.right"
+              style={{
+                transform: [{ rotate: collapsed ? "0deg" : "90deg" }],
+              }}
+            />
+          ) : (
+            <View style={styles.disclosureSpacer} />
+          )}
         </Pressable>
-      </View>
-      {hasChildren && !collapsed ? renderChildren?.(children, depth + 1) : null}
-    </>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="拖拽排序"
+          onLongPress={() => {
+            setActiveId(item.id);
+            onDragStart?.();
+          }}
+          delayLongPress={240}
+          style={styles.dragHandle}
+          hitSlop={8}
+        >
+          {isDragging ? (
+            <IconSymbol
+              size={16}
+              color={colors.icon}
+              name="line.3.horizontal"
+            />
+          ) : (
+            <View style={[styles.bullet, { borderColor: colors.icon }]} />
+          )}
+        </Pressable>
+        <TextInput
+          ref={(ref) => {
+            if (ref) {
+              inputRefs.current.set(item.id, ref);
+            } else {
+              inputRefs.current.delete(item.id);
+            }
+          }}
+          value={item.text}
+          onChangeText={(text) => updateItemText(item.id, text)}
+          onFocus={() => {
+            setActiveId(item.id);
+            onInputFocusChange?.(true);
+          }}
+          onBlur={() => {
+            onInputFocusChange?.(false);
+          }}
+          onSubmitEditing={() => addItemAfter(item.id)}
+          returnKeyType="next"
+          style={[
+            styles.input,
+            {
+              color: colors.text,
+              fontFamily: Fonts.sans,
+            },
+          ]}
+          placeholder="输入内容..."
+          placeholderTextColor={colors.icon}
+          blurOnSubmit={false}
+          onKeyPress={(event) => {
+            const { key } = event.nativeEvent;
+            if (key === "Tab") {
+              if ((event.nativeEvent as { shiftKey?: boolean }).shiftKey) {
+                outdentItem(item.id);
+              } else {
+                indentItem(item.id);
+              }
+            }
+            if (key === "Backspace" && item.text.length === 0) {
+              removeItem(item.id);
+            }
+          }}
+        />
+      </Pressable>
+    </View>
   );
 }
 

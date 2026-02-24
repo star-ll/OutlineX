@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Keyboard,
   Pressable,
@@ -18,7 +18,6 @@ import { useOutlineStore } from "@/stores/outline";
 
 type OutlineItemListProps = {
   items: string[];
-  level?: number;
   indentSize: number;
   colors: {
     text: string;
@@ -30,9 +29,20 @@ type OutlineItemListProps = {
   onEmptyPress?: () => void;
 };
 
+type VisibleRow = {
+  id: string;
+  depth: number;
+  parentId: string;
+};
+
+type DropTarget = {
+  parentId: string;
+  index: number;
+  depth: number;
+};
+
 type OutlineItemRowProps = {
-  itemId: string;
-  level: number;
+  row: VisibleRow;
   indentSize: number;
   colors: {
     text: string;
@@ -46,8 +56,7 @@ type OutlineItemRowProps = {
 };
 
 const OutlineItemRow = memo(function OutlineItemRow({
-  itemId,
-  level,
+  row,
   indentSize,
   colors,
   inputRefs,
@@ -55,32 +64,17 @@ const OutlineItemRow = memo(function OutlineItemRow({
   isActive,
   onInputFocusChange,
 }: OutlineItemRowProps) {
-  const renderChildren = useCallback(
-    (children: string[], nextDepth: number) => (
-      <OutlineItemList
-        items={children}
-        level={nextDepth}
-        indentSize={indentSize}
-        colors={colors}
-        inputRefs={inputRefs}
-        onInputFocusChange={onInputFocusChange}
-      />
-    ),
-    [colors, indentSize, inputRefs, onInputFocusChange],
-  );
-
   return (
     <View style={styles.itemBlock}>
       <OutlineItem
-        item={itemId}
-        depth={level}
+        item={row.id}
+        depth={row.depth}
         indentSize={indentSize}
         colors={colors}
         inputRefs={inputRefs}
         onDragStart={drag}
         isDragging={isActive}
         onInputFocusChange={onInputFocusChange}
-        renderChildren={renderChildren}
       />
     </View>
   );
@@ -88,31 +82,114 @@ const OutlineItemRow = memo(function OutlineItemRow({
 
 function OutlineItemList({
   items,
-  level = 0,
   indentSize,
   colors,
   inputRefs,
   onInputFocusChange,
   onEmptyPress,
 }: OutlineItemListProps) {
-  const moveItemWithinParent = useOutlineStore(
-    (state) => state.moveItemWithinParent,
-  );
-  const activeId = useOutlineStore((state) => state.activeId);
-  const listRef = useRef<GestureHandlerFlatList<string> | null>(null);
-  const listViewportRef = useRef<View>(null);
-  const scrollOffsetRef = useRef(0);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [listViewportHeight, setListViewportHeight] = useState(0);
+  const moveItem = useOutlineStore((state) => state.moveItem);
+  const childrenMap = useOutlineStore((state) => state.childrenMap);
+  const collapsedIds = useOutlineStore((state) => state.collapsedIds);
 
-  const keyExtractor = useCallback((item: string) => item, []);
-  const isRootEmpty = level === 0 && items.length === 0;
-  const isRootList = level === 0;
+  const listRef = useRef<GestureHandlerFlatList<VisibleRow> | null>(null);
+  const scrollOffsetRef = useRef(0);
+
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [activeDragIndex, setActiveDragIndex] = useState<number | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null);
+
+  const isRootEmpty = items.length === 0;
+
+  const visibleRows = useMemo(() => {
+    const rows: VisibleRow[] = [];
+
+    const walk = (parentId: string, depth: number) => {
+      const children = childrenMap[parentId] ?? [];
+      for (const childId of children) {
+        rows.push({ id: childId, depth, parentId });
+        if (!collapsedIds[childId]) {
+          walk(childId, depth + 1);
+        }
+      }
+    };
+
+    for (const rootId of items) {
+      rows.push({ id: rootId, depth: 0, parentId: "root" });
+      if (!collapsedIds[rootId]) {
+        walk(rootId, 1);
+      }
+    }
+
+    return rows;
+  }, [childrenMap, collapsedIds, items]);
+
+  const keyExtractor = useCallback((item: VisibleRow) => item.id, []);
+
+  const resolveDropTarget = useCallback(
+    (
+      reordered: VisibleRow[],
+      to: number,
+      fromRow: VisibleRow,
+    ): DropTarget | null => {
+      const prevRow = to > 0 ? reordered[to - 1] : undefined;
+      const nextRow = to < reordered.length - 1 ? reordered[to + 1] : undefined;
+
+      const siblingTarget = (anchor: VisibleRow, before = false): DropTarget => {
+        const parentId = anchor.parentId;
+        const siblings = childrenMap[parentId] || [];
+        const anchorIndex = siblings.findIndex((id) => id === anchor.id);
+        const index =
+          anchorIndex === -1
+            ? siblings.length
+            : before
+              ? anchorIndex
+              : anchorIndex + 1;
+
+        return {
+          parentId,
+          index,
+          depth: anchor.depth,
+        };
+      };
+
+      if (prevRow && nextRow) {
+        if (nextRow.parentId === prevRow.id) {
+          const parentId = prevRow.id;
+          const siblings = childrenMap[parentId] || [];
+          const nextIndex = siblings.findIndex((id) => id === nextRow.id);
+          return {
+            parentId,
+            index: nextIndex === -1 ? 0 : nextIndex,
+            depth: prevRow.depth + 1,
+          };
+        }
+
+        if (prevRow.parentId === nextRow.parentId) {
+          return siblingTarget(prevRow);
+        }
+
+        return siblingTarget(nextRow, true);
+      }
+
+      if (prevRow) {
+        return siblingTarget(prevRow);
+      }
+
+      if (nextRow) {
+        return siblingTarget(nextRow, true);
+      }
+
+      return {
+        parentId: fromRow.parentId,
+        index: 0,
+        depth: fromRow.depth,
+      };
+    },
+    [childrenMap],
+  );
 
   useEffect(() => {
-    if (!isRootList) {
-      return;
-    }
     const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
       setKeyboardHeight(event.endCoordinates.height);
     });
@@ -124,64 +201,13 @@ function OutlineItemList({
       showSub.remove();
       hideSub.remove();
     };
-  }, [isRootList]);
-
-  // useEffect(() => {
-  //   if (!isRootList || !activeId || listViewportHeight === 0) {
-  //     return;
-  //   }
-
-  //   const activeInput = inputRefs.current.get(activeId);
-  //   if (!activeInput) {
-  //     return;
-  //   }
-
-  //   const timer = setTimeout(() => {
-  //     activeInput.measureLayout(
-  //       listViewportRef.current as never,
-  //       (_x, y, _w, h) => {
-  //         const reservedBottom =
-  //           keyboardHeight > 0
-  //             ? keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT
-  //             : 0;
-  //         const visibleBottom = Math.max(
-  //           0,
-  //           listViewportHeight - reservedBottom,
-  //         );
-  //         const margin = 12;
-  //         const rowTop = y;
-  //         const rowBottom = y + h;
-
-  //         let nextOffset = scrollOffsetRef.current;
-
-  //         if (rowBottom + margin > visibleBottom) {
-  //           nextOffset += rowBottom + margin - visibleBottom;
-  //         } else if (rowTop - margin < 0) {
-  //           nextOffset += rowTop - margin;
-  //         }
-
-  //         nextOffset = Math.max(0, nextOffset);
-
-  //         if (Math.abs(nextOffset - scrollOffsetRef.current) > 1) {
-  //           listRef.current?.scrollToOffset({
-  //             offset: nextOffset,
-  //             animated: true,
-  //           });
-  //         }
-  //       },
-  //       () => {},
-  //     );
-  //   }, 30);
-
-  //   return () => clearTimeout(timer);
-  // }, [activeId, inputRefs, isRootList, keyboardHeight, listViewportHeight]);
+  }, []);
 
   const renderItem = useCallback(
-    ({ item, drag, isActive }: RenderItemParams<string>) => {
+    ({ item, drag, isActive }: RenderItemParams<VisibleRow>) => {
       return (
         <OutlineItemRow
-          itemId={item}
-          level={level}
+          row={item}
           indentSize={indentSize}
           colors={colors}
           inputRefs={inputRefs}
@@ -191,37 +217,44 @@ function OutlineItemList({
         />
       );
     },
-    [colors, indentSize, inputRefs, level, onInputFocusChange],
+    [colors, indentSize, inputRefs, onInputFocusChange],
   );
 
+  const previewTarget = useMemo(() => {
+    if (
+      activeDragIndex == null ||
+      placeholderIndex == null ||
+      placeholderIndex < 0
+    ) {
+      return null;
+    }
+
+    const fromRow = visibleRows[activeDragIndex];
+    if (!fromRow) {
+      return null;
+    }
+
+    return resolveDropTarget(visibleRows, placeholderIndex, fromRow);
+  }, [activeDragIndex, placeholderIndex, resolveDropTarget, visibleRows]);
+
   return (
-    <View
-      ref={listViewportRef}
-      style={isRootList ? styles.rootListPressArea : undefined}
-      onLayout={
-        isRootList
-          ? (event) => setListViewportHeight(event.nativeEvent.layout.height)
-          : undefined
-      }
-    >
+    <View style={styles.rootListPressArea}>
       <Pressable
         disabled={!(isRootEmpty && onEmptyPress)}
         onPress={onEmptyPress}
         style={isRootEmpty ? styles.emptyListPressArea : undefined}
       >
         {isRootEmpty ? (
-          <Text style={[styles.emptyListHint, { color: colors.icon }]}>
-            点击任意位置添加节点
-          </Text>
+          <Text style={[styles.emptyListHint, { color: colors.icon }]}>点击任意位置添加节点</Text>
         ) : null}
         <DraggableFlatList
-          ref={isRootList ? listRef : undefined}
-          data={items}
+          ref={listRef}
+          data={visibleRows}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={[
             styles.listContent,
-            isRootList && keyboardHeight > 0
+            keyboardHeight > 0
               ? {
                   paddingBottom:
                     24 + keyboardHeight + OUTLINE_KEYBOARD_TOOLBAR_HEIGHT,
@@ -232,32 +265,52 @@ function OutlineItemList({
           autoscrollSpeed={120}
           autoscrollThreshold={64}
           activationDistance={1}
+          onDragBegin={(index) => {
+            setActiveDragIndex(index);
+            setPlaceholderIndex(index);
+          }}
+          onPlaceholderIndexChange={(index) => {
+            setPlaceholderIndex(index);
+          }}
           onDragEnd={({ data, from, to }) => {
             if (from === to) {
+              setActiveDragIndex(null);
+              setPlaceholderIndex(null);
               return;
             }
-            const movedId = data[to];
-            if (!movedId) {
+
+            const fromRow = visibleRows[from];
+            if (!fromRow) {
+              setActiveDragIndex(null);
+              setPlaceholderIndex(null);
               return;
             }
-            moveItemWithinParent(movedId, to);
+
+            const target = resolveDropTarget(data, to, fromRow);
+            if (target) {
+              moveItem(fromRow.id, target.parentId, target.index);
+            }
+
+            setActiveDragIndex(null);
+            setPlaceholderIndex(null);
           }}
-          onScrollOffsetChange={
-            isRootList
-              ? (offset) => {
-                  scrollOffsetRef.current = offset;
-                }
-              : undefined
-          }
+          onScrollOffsetChange={(offset) => {
+            scrollOffsetRef.current = offset;
+          }}
           renderPlaceholder={() => (
             <View
               style={[
                 styles.placeholder,
-                { backgroundColor: `${colors.tint}22` },
+                {
+                  backgroundColor: `${colors.tint}22`,
+                  borderColor: colors.tint,
+                  borderWidth: 1,
+                  marginLeft: 12 + (previewTarget?.depth ?? 0) * indentSize,
+                },
               ]}
             />
           )}
-          scrollEnabled={isRootList}
+          scrollEnabled
         />
       </Pressable>
     </View>

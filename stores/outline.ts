@@ -52,6 +52,7 @@ type OutlineState = {
   indentItem: (id: string) => void;
   outdentItem: (id: string) => void;
   moveItemWithinParent: (id: string, targetIndex: number) => void;
+  moveItem: (id: string, targetParentId: string, targetIndex: number) => void;
   removeItem: (id: string) => void;
 };
 
@@ -278,6 +279,66 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       );
 
       return { childrenMap };
+    }),
+  moveItem: (id, targetParentId, targetIndex) =>
+    set((state) => {
+      const oldParentId = state.parentMap[id];
+      if (!oldParentId) {
+        return state;
+      }
+
+      if (targetParentId === id) {
+        return state;
+      }
+
+      let cursor: string | undefined = targetParentId;
+      while (cursor) {
+        if (cursor === id) {
+          return state;
+        }
+        cursor = state.parentMap[cursor];
+      }
+
+      const oldSiblings = [...(state.childrenMap[oldParentId] || [])];
+      const currentIndex = oldSiblings.findIndex((childId) => childId === id);
+      if (currentIndex === -1) {
+        return state;
+      }
+
+      oldSiblings.splice(currentIndex, 1);
+
+      const childrenMap = { ...state.childrenMap, [oldParentId]: oldSiblings };
+      const parentMap = { ...state.parentMap };
+
+      let nextTargetIndex = targetIndex;
+      const targetSiblings =
+        oldParentId === targetParentId
+          ? [...oldSiblings]
+          : [...(state.childrenMap[targetParentId] || [])];
+      if (oldParentId === targetParentId) {
+        nextTargetIndex = Math.max(
+          0,
+          Math.min(nextTargetIndex, targetSiblings.length),
+        );
+      } else {
+        nextTargetIndex = Math.max(
+          0,
+          Math.min(nextTargetIndex, targetSiblings.length),
+        );
+      }
+
+      targetSiblings.splice(nextTargetIndex, 0, id);
+      childrenMap[targetParentId] = targetSiblings;
+      parentMap[id] = targetParentId;
+
+      schedulePersist(
+        state.currentBookId,
+        state.dataMap,
+        parentMap,
+        childrenMap,
+      );
+
+      return { childrenMap, parentMap };
     }),
   removeItem: (id) => {
     let deferredMaps: Pick<

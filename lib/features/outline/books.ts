@@ -1,9 +1,9 @@
 import {
   clearAllRows,
-  clearRowsByBook,
   deleteBookRowById,
   insertBookRow,
   listBookRows,
+  runInDbTransaction,
   updateBookTitleRow,
 } from "@/lib/storage/outline-db";
 import { uuidV7 } from "@/utils/uuid";
@@ -44,13 +44,16 @@ export async function renameBook(bookId: string, title: string) {
 
 export async function deleteBook(bookId: string) {
   await initOutlineFeature();
-  await clearRowsByBook(bookId);
-  await deleteBookRowById(bookId);
-  await ensureDefaultBook();
+  await runInDbTransaction(async () => {
+    await deleteBookRowById(bookId);
+    await ensureDefaultBook();
+  });
 }
 
 export async function clearAllBooksAndNodes() {
   await initOutlineFeature();
-  await clearAllRows();
-  await ensureDefaultBook();
+  await runInDbTransaction(async () => {
+    await clearAllRows();
+    await ensureDefaultBook();
+  });
 }

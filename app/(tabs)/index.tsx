@@ -1,17 +1,21 @@
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
 
+import { AppToast } from "@/components/ui/app-toast";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { SwipeActionRow } from "@/components/ui/swipe-action-row";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBookStore } from "@/stores/book";
@@ -32,12 +36,18 @@ export default function IndexScreen() {
   const createButtonBackgroundColor =
     colorScheme === "dark" ? "#ECEDEE" : colors.tint;
   const createButtonTextColor = colorScheme === "dark" ? "#151718" : "#FFFFFF";
+  const deleteActionBackgroundColor =
+    colorScheme === "dark" ? "#B94141" : "#D14B4B";
   const books = useBookStore((state) => state.books);
   const hasHydrated = useBookStore((state) => state.hasHydrated);
   const isLoading = useBookStore((state) => state.isLoading);
   const hydrate = useBookStore((state) => state.hydrate);
   const refreshBooks = useBookStore((state) => state.refreshBooks);
   const createBook = useBookStore((state) => state.createBook);
+  const deleteBook = useBookStore((state) => state.deleteBook);
+  const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
 
   useEffect(() => {
     void hydrate();
@@ -59,6 +69,37 @@ export default function IndexScreen() {
       router.push(`/book/${bookId}`);
     },
     [router],
+  );
+  const showSuccessToast = useCallback((message: string) => {
+    setToastMessage(message);
+    setToastVisible(true);
+  }, []);
+
+  const handleConfirmDeleteBook = useCallback(
+    (bookId: string, title: string) => {
+      Alert.alert("删除笔记", `确认删除“${title}”？`, [
+        { text: "取消", style: "cancel" },
+        {
+          text: "删除",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeletingBookId(bookId);
+              await deleteBook(bookId);
+              showSuccessToast("删除成功");
+            } catch (error) {
+              console.error("Failed to delete book", error);
+              Alert.alert("删除失败", "删除笔记失败，请重试");
+            } finally {
+              setDeletingBookId((current) =>
+                current === bookId ? null : current,
+              );
+            }
+          },
+        },
+      ]);
+    },
+    [deleteBook, showSuccessToast],
   );
 
   const showInitialLoading = !hasHydrated && isLoading;
@@ -88,33 +129,51 @@ export default function IndexScreen() {
         ) : null}
 
         {books.map((book) => (
-          <Pressable
+          <SwipeActionRow
             key={book.id}
-            accessibilityRole="button"
-            accessibilityLabel={`打开笔记：${book.title}`}
-            accessibilityHint={`最近编辑时间 ${formatDate(book.updatedAt)}，点击进入详情`}
-            onPress={() => handleOpenBook(book.id)}
-            style={[
-              styles.bookRow,
-              {
-                borderColor: `${colors.icon}22`,
-                backgroundColor: colorScheme === "dark" ? "#1E2225" : "#FAFBFC",
-              },
-            ]}
+            enabled={deletingBookId !== book.id}
+            action={{
+              label: "删除",
+              onPress: () => handleConfirmDeleteBook(book.id, book.title),
+              backgroundColor: deleteActionBackgroundColor,
+              textColor: "#FFFFFF",
+              icon: (
+                <Ionicons name="trash-outline" size={16} color="#FFFFFF" />
+              ),
+              accessibilityLabel: `删除笔记：${book.title}`,
+              accessibilityHint: "点击后会弹出确认对话框",
+            }}
           >
-            <View style={[styles.dot, { borderColor: colors.icon }]} />
-            <View style={styles.bookBody}>
-              <ThemedText style={[styles.bookTitle, { color: colors.text }]}>
-                {book.title}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`打开笔记：${book.title}`}
+              accessibilityHint={`最近编辑时间 ${formatDate(book.updatedAt)}，点击进入详情`}
+              disabled={deletingBookId === book.id}
+              onPress={() => handleOpenBook(book.id)}
+              style={[
+                styles.bookRow,
+                {
+                  borderColor: `${colors.icon}22`,
+                  backgroundColor:
+                    colorScheme === "dark" ? "#1E2225" : "#FAFBFC",
+                  opacity: deletingBookId === book.id ? 0.65 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.dot, { borderColor: colors.icon }]} />
+              <View style={styles.bookBody}>
+                <ThemedText style={[styles.bookTitle, { color: colors.text }]}>
+                  {book.title}
+                </ThemedText>
+                <ThemedText style={[styles.bookMeta, { color: colors.icon }]}>
+                  最近编辑 {formatDate(book.updatedAt)}
+                </ThemedText>
+              </View>
+              <ThemedText style={[styles.chevron, { color: colors.icon }]}>
+                ›
               </ThemedText>
-              <ThemedText style={[styles.bookMeta, { color: colors.icon }]}>
-                最近编辑 {formatDate(book.updatedAt)}
-              </ThemedText>
-            </View>
-            <ThemedText style={[styles.chevron, { color: colors.icon }]}>
-              ›
-            </ThemedText>
-          </Pressable>
+            </Pressable>
+          </SwipeActionRow>
         ))}
 
         {showEmpty ? (
@@ -133,6 +192,11 @@ export default function IndexScreen() {
         backgroundColor={createButtonBackgroundColor}
         iconColor={createButtonTextColor}
         style={styles.fabButton}
+      />
+      <AppToast
+        visible={toastVisible}
+        message={toastMessage}
+        onHide={() => setToastVisible(false)}
       />
     </ThemedView>
   );

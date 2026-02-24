@@ -31,10 +31,24 @@ export type EdgeRow = {
 
 const getDb = () => {
   if (!dbPromise) {
-    dbPromise = SQLite.openDatabaseAsync(OUTLINE_DB_NAME);
+    dbPromise = SQLite.openDatabaseAsync(OUTLINE_DB_NAME).then(async (db) => {
+      await db.execAsync("PRAGMA foreign_keys = ON;");
+      return db;
+    });
   }
   return dbPromise;
 };
+
+export async function runInDbTransaction<T>(callback: () => Promise<T>) {
+  const db = await getDb();
+  let result: T | null = null;
+
+  await db.withTransactionAsync(async () => {
+    result = await callback();
+  });
+
+  return result as T;
+}
 
 export async function runStatements(statements: SqlStatement[]) {
   const db = await getDb();
@@ -91,6 +105,14 @@ export async function listBookRows() {
   );
 }
 
+export async function getBookRowById(bookId: string) {
+  const rows = await queryAll<BookRow>(
+    `SELECT id, title, createdAt, updatedAt FROM ${OUTLINE_DB_TABLE_BOOK} WHERE id = ? LIMIT 1;`,
+    [bookId],
+  );
+  return rows[0] ?? null;
+}
+
 export async function insertBookRow(book: BookRow) {
   await runStatements([
     {
@@ -104,6 +126,15 @@ export async function insertBookRowIfNotExists(book: BookRow) {
   await runStatements([
     {
       sql: `INSERT OR IGNORE INTO ${OUTLINE_DB_TABLE_BOOK} (id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?);`,
+      args: [book.id, book.title, book.createdAt, book.updatedAt],
+    },
+  ]);
+}
+
+export async function upsertBookRow(book: BookRow) {
+  await runStatements([
+    {
+      sql: `INSERT OR REPLACE INTO ${OUTLINE_DB_TABLE_BOOK} (id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?);`,
       args: [book.id, book.title, book.createdAt, book.updatedAt],
     },
   ]);

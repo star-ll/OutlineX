@@ -14,12 +14,14 @@
 - `clearAllBooksAndNodes(): Promise<void>`
 - Errors:
   - Propagate storage-layer failures.
+  - `deleteBook` and `clearAllBooksAndNodes` are executed in a single SQLite transaction.
 
 ### Outline map APIs
 - `loadOutlineMaps(bookId: string): Promise<OutlineMaps>`
 - `saveOutlineMaps(bookId: string, maps: OutlineMaps): Promise<void>`
 - Errors:
   - Propagate storage-layer failures.
+  - `saveOutlineMaps` is executed in a single SQLite transaction.
 
 ### `createOutlinePersistenceScheduler(waitMs?: number)`
 - Params:
@@ -40,4 +42,6 @@
 - 2026-02-15: Added architecture-compliant persistence scheduler API and module documentation.
 - 2026-02-16: Switched outline persistence scheduling from debounce timer to scheduler-layer queue with dedupe and priority support.
 - 2026-02-23: Added per-book serial persistence queue and latest-snapshot coalescing to avoid concurrent DB write races.
+- 2026-02-24: Refactored `deleteBook`, `clearAllBooksAndNodes`, and `saveOutlineMaps` to single SQLite transactions for atomic writes.
+- 2026-02-24: Upgraded schema compatibility checks to require real FK/CASCADE constraints for books/nodes/edges.
 - Breaking changes: none.

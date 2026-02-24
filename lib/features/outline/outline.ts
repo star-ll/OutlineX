@@ -8,6 +8,7 @@ import {
   insertNodeRows,
   listEdgeRowsByBook,
   listNodeRowsByBook,
+  runInDbTransaction,
   touchBookRow,
 } from "@/lib/storage/outline-db";
 
@@ -124,27 +125,27 @@ export async function loadOutlineMaps(bookId: string): Promise<OutlineMaps> {
 export async function saveOutlineMaps(bookId: string, maps: OutlineMaps) {
   await initOutlineFeature();
 
-  const now = Date.now();
-  await insertBookRowIfNotExists({
-    id: bookId,
-    title: "未命名笔记",
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  await clearRowsByBook(bookId);
-
   const nodes = Object.values(maps.dataMap);
-  if (nodes.length > 0) {
-    await insertNodeRows(bookId, nodes);
-  }
-
   const edges = Object.entries(maps.childrenMap).flatMap(([parentId, children]) =>
     children.map((childId, position) => ({ parentId, childId, position })),
   );
-  if (edges.length > 0) {
-    await insertEdgeRows(bookId, edges);
-  }
 
-  await touchBookRow(bookId, Date.now());
+  await runInDbTransaction(async () => {
+    const now = Date.now();
+    await insertBookRowIfNotExists({
+      id: bookId,
+      title: "未命名笔记",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await clearRowsByBook(bookId);
+    if (nodes.length > 0) {
+      await insertNodeRows(bookId, nodes);
+    }
+    if (edges.length > 0) {
+      await insertEdgeRows(bookId, edges);
+    }
+    await touchBookRow(bookId, Date.now());
+  });
 }

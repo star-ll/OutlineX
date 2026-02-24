@@ -26,7 +26,9 @@ export const INIT_OUTLINE_STATEMENTS = [
         id TEXT PRIMARY KEY NOT NULL,
         bookId TEXT NOT NULL,
         type TEXT NOT NULL,
-        text TEXT NOT NULL
+        text TEXT NOT NULL,
+        UNIQUE (bookId, id),
+        FOREIGN KEY (bookId) REFERENCES ${OUTLINE_DB_TABLE_BOOK}(id) ON DELETE CASCADE
       );
     `,
   },
@@ -38,7 +40,10 @@ export const INIT_OUTLINE_STATEMENTS = [
         childId TEXT NOT NULL,
         position INTEGER NOT NULL,
         PRIMARY KEY (bookId, parentId, position),
-        UNIQUE (bookId, childId)
+        UNIQUE (bookId, childId),
+        FOREIGN KEY (bookId) REFERENCES ${OUTLINE_DB_TABLE_BOOK}(id) ON DELETE CASCADE,
+        FOREIGN KEY (bookId, parentId) REFERENCES ${OUTLINE_DB_TABLE_DATANODE}(bookId, id) ON DELETE CASCADE,
+        FOREIGN KEY (bookId, childId) REFERENCES ${OUTLINE_DB_TABLE_DATANODE}(bookId, id) ON DELETE CASCADE
       );
     `,
   },

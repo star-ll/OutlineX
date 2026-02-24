@@ -42,7 +42,39 @@
 - Errors:
   - No explicit thrown errors.
 
+### `Transaction<C>()`
+- File: `transaction.ts`
+- Generic:
+  - `C extends Record<string | number | symbol, any>` transaction context object.
+- Constructor:
+  - `new Transaction<C>()`
+- Methods:
+  - `add(taskName: string, callback: TransactionTask<C>): void`
+    - `taskName`: required non-empty task name for logging/tracing.
+    - `callback`: task function receiving shared `context`.
+  - `apply(): Promise<void>`
+    - Executes queued tasks in order.
+    - If a task throws, runs rollback stack in reverse order and then rejects.
+  - `clear(): void`
+    - Clears queued tasks and undo stack.
+- Types:
+  - `TransactionApplyError`
+    - Error object with:
+      - `rolledBack: boolean` (rollback completed without rollback-stage failures)
+      - `failures: TransactionFailure[]`
+  - `TransactionFailure`
+    - `{ phase: "apply" | "rollback"; taskName: string; error: unknown }`
+  - `TransactionTask<C>`
+    - `(context) => void | undo | Promise<void | undo>`
+  - `TransactionTaskUndo<C>`
+    - `(context) => void | Promise<void>`
+- Errors:
+  - `add` throws when transaction is flushing or `taskName` is empty.
+  - `apply` rejects with `TransactionApplyError` after rollback attempt.
+
 ## Changes (date + summary + breaking changes if any)
 
 - 2026-02-16: Added scheduler module with priority queues, time slicing, dedupe replacement, async-flush error handling, and storage-prefixed task id helper.
-- Breaking changes: none.
+- 2026-02-24: Added transaction API documentation and updated `Transaction.add` to `add(taskName, callback)` with required task name.
+- 2026-02-24: `Transaction.apply` now rejects with structured failure details (`rolledBack`, `failures`) when apply/rollback fails.
+- Breaking changes: `Transaction.add` signature changed from `add(callback)` to `add(taskName, callback)`.

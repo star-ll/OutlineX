@@ -27,11 +27,25 @@ function isSchemaCompatible(tableSqlMap: Map<string, string>) {
     booksSql.includes("title TEXT NOT NULL") &&
     booksSql.includes("createdAt INTEGER NOT NULL") &&
     booksSql.includes("updatedAt INTEGER NOT NULL");
-  const nodesOk = nodesSql.includes("bookId TEXT NOT NULL");
+  const nodesOk =
+    nodesSql.includes("bookId TEXT NOT NULL") &&
+    nodesSql.includes("UNIQUE (bookId, id)") &&
+    nodesSql.includes(
+      `FOREIGN KEY (bookId) REFERENCES ${OUTLINE_DB_TABLE_BOOK}(id) ON DELETE CASCADE`,
+    );
   const edgesOk =
     edgesSql.includes("bookId TEXT NOT NULL") &&
     edgesSql.includes("PRIMARY KEY (bookId, parentId, position)") &&
-    edgesSql.includes("UNIQUE (bookId, childId)");
+    edgesSql.includes("UNIQUE (bookId, childId)") &&
+    edgesSql.includes(
+      `FOREIGN KEY (bookId) REFERENCES ${OUTLINE_DB_TABLE_BOOK}(id) ON DELETE CASCADE`,
+    ) &&
+    edgesSql.includes(
+      `FOREIGN KEY (bookId, parentId) REFERENCES ${OUTLINE_DB_TABLE_DATANODE}(bookId, id) ON DELETE CASCADE`,
+    ) &&
+    edgesSql.includes(
+      `FOREIGN KEY (bookId, childId) REFERENCES ${OUTLINE_DB_TABLE_DATANODE}(bookId, id) ON DELETE CASCADE`,
+    );
 
   return booksOk && nodesOk && edgesOk;
 }

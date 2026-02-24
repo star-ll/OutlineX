@@ -20,7 +20,7 @@ This project uses Expo Development Build (dev client), not Expo Go.
   - algorithms: pure reusable algorithms (debounce, stack, queue, etc.).
   - features: business logic APIs for UI/State.
   - storage: db/cache layer.
-  - scheduler: system-level scheduling (not React UI scheduling).
+  - scheduler: system-level scheduling and transaction (not React UI scheduling).
 - skills: prompt templates & agent playbooks (non-runtime, docs only).
 - agents: includes all agent config files.
 
@@ -65,8 +65,8 @@ If no agent matches, use `dev` (fallback only), then `default`.
 you must automatically activate and use the corresponding skills defined below, and keep these rules.
 
 - test (`agents/test.md`): test, unit, integration, e2e, spec, jest, vitest, coverage; `test/**`.
+- product (`agents/product.md`): suggestion, inspiration, product functions, analyze, evaluate, review, compare, plan, prd, ux copy; read-only requests.
 - ui (`agents/ui.md`): ui, screen, page, component, style, layout, animation, state, store, hook; `app/**`, `components/**`, `hooks/**`, `stores/**`.
-- product (`agents/product.md`): analyze, evaluate, review, compare, plan, prd, ux copy; read-only requests.
 - ops (`agents/ops.md`): ci/cd, lint, eslint, prettier, husky, script, build, release, eas, pipeline, tooling, observability.
 - dev (`agents/dev.md`): feature, refactor, bugfix, logic implementation not matched above.
 - default (`agents/default.md`): behave as dev.

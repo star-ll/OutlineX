@@ -3,6 +3,7 @@ import { create } from "zustand";
 import {
   clearAllBooksAndNodes,
   createBook as createBookFeature,
+  deleteBook as deleteBookFeature,
   renameBook as renameBookFeature,
   listBooks,
   type OutlineBook,
@@ -16,6 +17,7 @@ type BookState = {
   refreshBooks: () => Promise<void>;
   createBook: (title?: string) => Promise<OutlineBook>;
   renameBook: (bookId: string, title: string) => Promise<void>;
+  deleteBook: (bookId: string) => Promise<void>;
   clearAllBooks: () => Promise<void>;
 };
 
@@ -57,6 +59,11 @@ export const useBookStore = create<BookState>((set, get) => ({
           : book,
       ),
     }));
+  },
+  deleteBook: async (bookId) => {
+    await deleteBookFeature(bookId);
+    const rows = await listBooks();
+    set({ books: rows, hasHydrated: true });
   },
   clearAllBooks: async () => {
     await clearAllBooksAndNodes();

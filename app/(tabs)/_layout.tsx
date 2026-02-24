@@ -34,15 +34,17 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="debug"
-          options={{
-            title: "Debug",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="chevron.right" color={color} />
-            ),
-          }}
-        />
+        {__DEV__ ? (
+          <Tabs.Screen
+            name="debug"
+            options={{
+              title: "Debug",
+              tabBarIcon: ({ color }) => (
+                <IconSymbol size={28} name="chevron.right" color={color} />
+              ),
+            }}
+          />
+        ) : null}
       </Tabs>
     </SafeAreaView>
   );

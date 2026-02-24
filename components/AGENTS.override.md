@@ -7,3 +7,7 @@ This directory belongs to the UI layer.
 - Keep components presentation-focused.
 - Components must not import from `lib/storage/**` directly; use `lib/features/**`.
 - Components should avoid direct Storage/Scheduler access.
+
+# Document-first
+
+Must sync all components short introduction to `./component-docs.md`.

@@ -11,6 +11,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBookStore } from "@/stores/book";
@@ -72,22 +73,6 @@ export default function IndexScreen() {
           </ThemedText>
           {/* <ThemedText style={[styles.title, { color: colors.text }]}>我的文档</ThemedText> */}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="新建笔记"
-          accessibilityHint="创建一个新的大纲笔记并进入编辑"
-          onPress={handleCreateBook}
-          style={[
-            styles.createButton,
-            { backgroundColor: createButtonBackgroundColor },
-          ]}
-        >
-          <ThemedText
-            style={[styles.createButtonText, { color: createButtonTextColor }]}
-          >
-            新建
-          </ThemedText>
-        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.listContent}>
@@ -135,11 +120,20 @@ export default function IndexScreen() {
         {showEmpty ? (
           <View style={[styles.empty, { borderColor: `${colors.icon}22` }]}>
             <ThemedText style={[styles.emptyText, { color: colors.icon }]}>
-              还没有笔记，点击右上角新建一个。
+              还没有笔记，点击右下角新建一个。
             </ThemedText>
           </View>
         ) : null}
       </ScrollView>
+
+      <FloatingActionButton
+        onPress={handleCreateBook}
+        accessibilityLabel="新建笔记"
+        accessibilityHint="创建一个新的大纲笔记并进入编辑"
+        backgroundColor={createButtonBackgroundColor}
+        iconColor={createButtonTextColor}
+        style={styles.fabButton}
+      />
     </ThemedView>
   );
 }
@@ -165,18 +159,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
   },
-  createButton: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  createButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: 96,
     gap: 8,
+  },
+  fabButton: {
+    position: "absolute",
+    right: 16,
+    bottom: 24,
   },
   bookRow: {
     borderWidth: 1,

@@ -18,9 +18,10 @@ version: v1
 
 - (none)
 
-自动调用：
+前置流程：
 
-- skills/agents-ui
+- 调用 skills/agents-ui
+- 读取 `components/component-docs.md` 获取通用组件说明
 
 注意：
 

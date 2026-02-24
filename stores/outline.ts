@@ -325,37 +325,44 @@ export const useOutlineStore = create<OutlineState>((set, get) => ({
       oldSiblings.splice(currentIndex, 1);
 
       const childrenMap = { ...state.childrenMap, [oldParentId]: oldSiblings };
-      const parentMap = { ...state.parentMap };
+      let parentMap: Record<string, string> | null = null;
 
       let nextTargetIndex = targetIndex;
       const targetSiblings =
         oldParentId === targetParentId
           ? [...oldSiblings]
           : [...(state.childrenMap[targetParentId] || [])];
-      if (oldParentId === targetParentId) {
-        nextTargetIndex = Math.max(
-          0,
-          Math.min(nextTargetIndex, targetSiblings.length),
-        );
-      } else {
-        nextTargetIndex = Math.max(
-          0,
-          Math.min(nextTargetIndex, targetSiblings.length),
-        );
+
+      // Same-parent moves receive an index based on pre-removal order.
+      // After removing current item, indices after currentIndex shift left by one.
+      if (oldParentId === targetParentId && nextTargetIndex > currentIndex) {
+        nextTargetIndex -= 1;
+      }
+
+      nextTargetIndex = Math.max(0, Math.min(nextTargetIndex, targetSiblings.length));
+
+      if (oldParentId === targetParentId && nextTargetIndex === currentIndex) {
+        return state;
       }
 
       targetSiblings.splice(nextTargetIndex, 0, id);
       childrenMap[targetParentId] = targetSiblings;
-      parentMap[id] = targetParentId;
+      if (oldParentId !== targetParentId) {
+        parentMap = { ...state.parentMap };
+        parentMap[id] = targetParentId;
+      }
 
       schedulePersist(
         state.currentBookId,
         state.dataMap,
-        parentMap,
+        parentMap ?? state.parentMap,
         childrenMap,
       );
 
-      return { childrenMap, parentMap };
+      if (parentMap) {
+        return { childrenMap, parentMap };
+      }
+      return { childrenMap };
     }),
   removeItem: (id) => {
     let deferredMaps: Pick<

@@ -89,11 +89,15 @@ function OutlineItemList({
   onEmptyPress,
 }: OutlineItemListProps) {
   const moveItem = useOutlineStore((state) => state.moveItem);
+  const moveItemWithinParent = useOutlineStore(
+    (state) => state.moveItemWithinParent,
+  );
   const childrenMap = useOutlineStore((state) => state.childrenMap);
   const collapsedIds = useOutlineStore((state) => state.collapsedIds);
 
   const listRef = useRef<GestureHandlerFlatList<VisibleRow> | null>(null);
   const scrollOffsetRef = useRef(0);
+  const releaseAppliedRef = useRef(false);
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [activeDragIndex, setActiveDragIndex] = useState<number | null>(null);
@@ -189,6 +193,38 @@ function OutlineItemList({
     [childrenMap],
   );
 
+  const applyDrop = useCallback(
+    (from: number, to: number) => {
+      if (from === to) {
+        return;
+      }
+
+      const fromRow = visibleRows[from];
+      if (!fromRow) {
+        return;
+      }
+
+      const reordered = [...visibleRows];
+      const [movedRow] = reordered.splice(from, 1);
+      if (!movedRow) {
+        return;
+      }
+      reordered.splice(to, 0, movedRow);
+
+      const target = resolveDropTarget(reordered, to, fromRow);
+      if (!target) {
+        return;
+      }
+
+      if (target.parentId === fromRow.parentId) {
+        moveItemWithinParent(fromRow.id, target.index);
+      } else {
+        moveItem(fromRow.id, target.parentId, target.index);
+      }
+    },
+    [moveItem, moveItemWithinParent, resolveDropTarget, visibleRows],
+  );
+
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
       setKeyboardHeight(event.endCoordinates.height);
@@ -266,31 +302,27 @@ function OutlineItemList({
           autoscrollThreshold={64}
           activationDistance={1}
           onDragBegin={(index) => {
+            releaseAppliedRef.current = false;
             setActiveDragIndex(index);
             setPlaceholderIndex(index);
           }}
           onPlaceholderIndexChange={(index) => {
             setPlaceholderIndex(index);
           }}
+          onRelease={(from) => {
+            const to = placeholderIndex;
+            if (to == null || to < 0) {
+              return;
+            }
+            applyDrop(from, to);
+            releaseAppliedRef.current = true;
+          }}
           onDragEnd={({ data, from, to }) => {
-            if (from === to) {
-              setActiveDragIndex(null);
-              setPlaceholderIndex(null);
-              return;
+            if (!releaseAppliedRef.current) {
+              // Fallback for edge cases where onRelease does not fire.
+              applyDrop(from, to);
             }
-
-            const fromRow = visibleRows[from];
-            if (!fromRow) {
-              setActiveDragIndex(null);
-              setPlaceholderIndex(null);
-              return;
-            }
-
-            const target = resolveDropTarget(data, to, fromRow);
-            if (target) {
-              moveItem(fromRow.id, target.parentId, target.index);
-            }
-
+            releaseAppliedRef.current = false;
             setActiveDragIndex(null);
             setPlaceholderIndex(null);
           }}
